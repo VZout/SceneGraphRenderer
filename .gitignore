@@ -6,5 +6,5 @@ imgui.ini
 /.vs/
 /.clion/
 /.idea/
-*.swap
+*.swp
 
