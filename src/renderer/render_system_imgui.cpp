@@ -93,6 +93,12 @@ void RenderSystem::ImGui_DrawBar(std::shared_ptr<profiler::Node> node, profiler:
 void RenderSystem::ImGui_RenderGameView(IMGUI_RENDER_FUNC_PARAMS) {
 	if (ImGui::BeginDock("Game View", &imgui_show_game_view)) {
 		ImGui::SetWindowFontScale(1);
+		ImGui::Button("Play"); 
+		ImGui::SameLine();
+		ImGui::Button("Pause"); 
+		ImGui::SameLine();
+		ImGui::Button("Stop"); 
+		ImGui::SameLine();
 		ImGui::Checkbox("Constrain Aspect Ratio", &imgui_game_view_constrain_aspect_ratio);
 		ImGui::SameLine();
 		ImGui::DragFloat("Aspect Ratio", &imgui_game_view_aspect_ratio);
@@ -210,7 +216,7 @@ void RenderSystem::ImGui_RenderCameraProperties(IMGUI_RENDER_FUNC_PARAMS) {
 
 void RenderSystem::ImGui_RenderPerformanceOverlay() {
 	if (imgui_show_perf_overlay) { // FIXME: Why do I need to do this? Bug?
-		if (ImGui::Begin("Performance Overlay", &imgui_show_perf_overlay, ImVec2(80, 20), 0.5, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
+		if (ImGui::Begin("Performance Overlay", &imgui_show_perf_overlay, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) {
 			ImGui::Text("FPS: %d", fps);
 		}
 		ImGui::End();

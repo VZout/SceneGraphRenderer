@@ -9,6 +9,7 @@ struct lua_State;
 namespace ImGui
 {
 
+IMGUI_API bool CheckboxEx(const char* label, bool* v);
 IMGUI_API ImVec2 GetOsImePosRequest();
 IMGUI_API void ResetActiveID();
 IMGUI_API int PlotHistogramEx(const char* label,
@@ -30,7 +31,7 @@ IMGUI_API bool ListBox(const char* label,
 	int items_count,
 	int height_in_items);
 IMGUI_API void BringToFront();
-IMGUI_API bool IsWindowOrChildWindowFocused();
+IMGUI_API bool IsFocusedHierarchy();
 
 IMGUI_API bool BeginToolbar(const char* str_id, ImVec2 screen_pos, ImVec2 size);
 IMGUI_API void EndToolbar();
@@ -48,30 +49,31 @@ IMGUI_API bool BeginTimeline(const char* str_id, float max_value);
 IMGUI_API bool TimelineEvent(const char* str_id, float* values);
 IMGUI_API void EndTimeline();
 
-struct CurveEditor
+enum class CurveEditorFlags
 {
-	bool valid;
-	ImVec2 beg_pos;
-	ImVec2 graph_size;
-	static const float GRAPH_MARGIN;
-	static const float HEIGHT;
-	ImVec2 inner_bb_min;
-	ImVec2 inner_bb_max;
-	int point_idx;
+	NO_TANGENTS = 1 << 0,
+	SHOW_GRID = 1 << 1,
+	RESET = 1 << 2
 };
 
-IMGUI_API CurveEditor BeginCurveEditor(const char* label);
-IMGUI_API bool CurveSegment(ImVec2* point, CurveEditor& editor);
-IMGUI_API void EndCurveEditor(const CurveEditor& editor);
+IMGUI_API int CurveEditor(const char* label
+	, float* values
+	, int points_count
+	, const ImVec2& size = ImVec2(-1, -1)
+	, ImU32 flags = 0
+	, int* new_count = nullptr
+	, int* selected_point = nullptr);
 IMGUI_API bool BeginResizablePopup(const char* str_id, const ImVec2& size_on_first_use);
 IMGUI_API void IntervalGraph(const unsigned long long* value_pairs,
 	int value_pairs_count,
 	unsigned long long scale_min,
 	unsigned long long scele_max);
-IMGUI_API bool FilterInput(const char* label, char* buf, size_t buf_size);
+IMGUI_API bool LabellessInputText(const char* label, char* buf, size_t buf_size, float width = -1);
 IMGUI_API void HSplitter(const char* str_id, ImVec2* size);
+IMGUI_API void VSplitter(const char* str_id, ImVec2* size);
 IMGUI_API void Rect(float w, float h, ImU32 color);
 
+// Custom Style
 IMGUI_API void ApplyCustomStyle();
 
 } // namespace ImGui
