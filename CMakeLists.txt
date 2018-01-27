@@ -66,6 +66,7 @@ include_directories(
 	C:/VulkanSDK/1.0.57.0/Include
 	modules/
 	deps/assimp/include/
+	${CMAKE_BINARY_DIR}/deps/assimp/include
 	deps/glfw/include/
 )
 

@@ -425,7 +425,7 @@ namespace rlr {
 		Create(quad_vb, device, vertices, 6 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		StageBuffer(quad_vb, *main_cmd_list);
 
-		rlr::Load(ssao_texture, "ssao.png");
+		rlr::Load(ssao_texture, "resources/engine/textures/ssao.png");
 		StageTexture(ssao_texture, device, *main_cmd_list);
 
 		staging_func(&device, main_cmd_list);

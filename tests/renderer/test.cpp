@@ -91,13 +91,13 @@ void RegisterPipelines() {
 
 	rlr::Shader pixel_shader;
 	rlr::Shader vertex_shader;
-	Load(vertex_shader, rlr::ShaderType::VERTEX_SHADER, "vertex.hlsl");
-	Load(pixel_shader, rlr::ShaderType::PIXEL_SHADER, "pixel.hlsl");
+	Load(vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/tests/vertex.hlsl");
+	Load(pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/tests/pixel.hlsl");
 
 	rlr::Shader anim_pixel_shader;
 	rlr::Shader anim_vertex_shader;
-	Load(anim_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "anim_vertex.hlsl");
-	Load(anim_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "anim_pixel.hlsl");
+	Load(anim_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/tests/anim_vertex.hlsl");
+	Load(anim_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/tests/anim_pixel.hlsl");
 
 	rlr::PipelineState* ps = new rlr::PipelineState();
 	rlr::SetVertexShader(*ps, &vertex_shader);
@@ -172,24 +172,24 @@ int main() {
 	wall_texture = new rlr::Texture();
 	wall_texture_specular = new rlr::Texture();
 	wall_texture_normal = new rlr::Texture();
-	rlr::Load(*texture, "spot.png");
-	rlr::Load(*floor_texture, "rustediron2_basecolor.png");
-	rlr::Load(*floor_texture_specular, "rustediron2_metallic.png");
-	rlr::Load(*floor_texture_normal, "rustediron2_normal.png");
-	rlr::Load(*metal_texture, "greasy-metal-pan1-albedo.png");
-	rlr::Load(*metal_texture_specular, "greasy-metal-pan1-roughness.png");
-	rlr::Load(*metal_texture_normal, "greasy-metal-pan1-normal.png");
-	rlr::Load(*wall_texture, "agedplanks1-albedo.png");
-	rlr::Load(*wall_texture_specular, "agedplanks1-roughness.png");
-	rlr::Load(*wall_texture_normal, "agedplanks1-normal4-ue.png");
+	rlr::Load(*texture, "resources/tests/spot.png");
+	rlr::Load(*floor_texture, "resources/tests/rustediron2_basecolor.png");
+	rlr::Load(*floor_texture_specular, "resources/tests/rustediron2_metallic.png");
+	rlr::Load(*floor_texture_normal, "resources/tests/rustediron2_normal.png");
+	rlr::Load(*metal_texture, "resources/tests/greasy-metal-pan1-albedo.png");
+	rlr::Load(*metal_texture_specular, "resources/tests/greasy-metal-pan1-roughness.png");
+	rlr::Load(*metal_texture_normal, "resources/tests/greasy-metal-pan1-normal.png");
+	rlr::Load(*wall_texture, "resources/tests/agedplanks1-albedo.png");
+	rlr::Load(*wall_texture_specular, "resources/tests/agedplanks1-roughness.png");
+	rlr::Load(*wall_texture_normal, "resources/tests/agedplanks1-normal4-ue.png");
 
 	floor_model = new rlr::Model();
-	rlr::Load(*floor_model, "floor.fbx");
+	rlr::Load(*floor_model, "resources/tests/floor.fbx");
 
 	dr0->model = new rlr::Model();
 	dr1->model = new rlr::Model();
-	rlr::Load(*dr0->model, "spot.obj");
-	rlr::Load(*dr1->model, "dance.fbx");
+	rlr::Load(*dr0->model, "resources/tests/spot.obj");
+	rlr::Load(*dr1->model, "resources/tests/dance.fbx");
 
 	render_system->RegisterImGuiRenderFunc(ImGui_Render);
 	render_system->RegisterStagingFunc(Staging);
