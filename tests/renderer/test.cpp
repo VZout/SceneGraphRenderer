@@ -49,22 +49,11 @@ void ImGui_Render() {
 			}
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("View")) {
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("Help")) {
-			ImGui::EndMenu();
-		}
 		render_system->ImGui_RenderMainMenuBarMenu();
 		ImGui::EndMainMenuBar();
 	}
 
-	if (ImGui::BeginDock("Derp")) {
-	}
-	if (first) ImGui::LetsDock(false, ImGui::DockStyle::TOP);
-	ImGui::EndDock();
-
-	render_system->ImGui_RenderHardwareDetails(first, true, ImGui::DockStyle::CENTER);
+	render_system->ImGui_RenderHardwareDetails(first, false, ImGui::DockStyle::TOP);
 	render_system->ImGui_RenderPostProcessingSettings(first, true, ImGui::DockStyle::CENTER);
 	render_system->ImGui_RenderRenderGraph(first, true, ImGui::DockStyle::CENTER, graph);
 	render_system->ImGui_RenderGameView(first, true, ImGui::DockStyle::RIGHT);

@@ -93,9 +93,9 @@ void RenderSystem::ImGui_DrawBar(std::shared_ptr<profiler::Node> node, profiler:
 void RenderSystem::ImGui_RenderGameView(IMGUI_RENDER_FUNC_PARAMS) {
 	if (ImGui::BeginDock("Game View", &imgui_show_game_view)) {
 		ImGui::SetWindowFontScale(1);
-		ImGui::Button("Play"); 
+		ImGui::Button(">"); 
 		ImGui::SameLine();
-		ImGui::Button("Pause"); 
+		ImGui::Button("||"); 
 		ImGui::SameLine();
 		ImGui::Button("Stop"); 
 		ImGui::SameLine();

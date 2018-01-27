@@ -1280,6 +1280,8 @@ namespace ImGui
 			style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.32f, 0.52f, 0.65f, 1.00f);
 			style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.50f);
 			break;
+		case 4: ImGui::StyleColorsDark(); break;
+		case 5: ImGui::StyleColorsLight(); break;
 		}
 	}
 
