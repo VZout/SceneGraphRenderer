@@ -1,0 +1,8 @@
+/build/
+/x64/
+imgui.ini
+/.vs/
+/.clion/
+/.idea/
+*.swap
+
