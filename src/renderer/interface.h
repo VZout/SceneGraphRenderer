@@ -10,24 +10,26 @@ namespace rlr {
 
 class Window;
 
-struct Device;
-struct CommandQueue;
-struct RenderTarget;
-struct RenderWindow;
-struct CommandList;
-struct Fence;
-struct PipelineState;
-struct Shader;
-struct RootSignature;
-struct Viewport;
-struct StagingBuffer;
-struct ConstantBuffer;
-struct Texture;
-struct DescriptorHeap;
-struct DescHeapCPUHandle;
-struct DescHeapGPUHandle;
-struct TextureArray;
-struct Resource;
+#define RLR_HANDLE struct
+
+RLR_HANDLE Device;
+RLR_HANDLE CommandQueue;
+RLR_HANDLE RenderTarget;
+RLR_HANDLE RenderWindow;
+RLR_HANDLE CommandList;
+RLR_HANDLE Fence;
+RLR_HANDLE PipelineState;
+RLR_HANDLE Shader;
+RLR_HANDLE RootSignature;
+RLR_HANDLE Viewport;
+RLR_HANDLE StagingBuffer;
+RLR_HANDLE ConstantBuffer;
+RLR_HANDLE Texture;
+RLR_HANDLE DescriptorHeap;
+RLR_HANDLE DescHeapCPUHandle;
+RLR_HANDLE DescHeapGPUHandle;
+RLR_HANDLE TextureArray;
+RLR_HANDLE Resource;
 
 // Device
 void Create(Device& device);
@@ -80,9 +82,7 @@ void Destroy(RenderWindow& render_window);
 
 // CommandList
 void Allocate(CommandList& cmd_list, Device& device, unsigned int num = 1);
-//void Begin(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx, bool clear = true, bool deferred = false, bool temp_compo = false);
 void Begin(CommandList& cmd_list, unsigned int frame_idx);
-//void End(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx, bool deferred = false);
 void End(CommandList& cmd_list);
 void Bind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx, bool clear = true, bool deferred = false, bool temp_compo = false);
 void SBind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx);
