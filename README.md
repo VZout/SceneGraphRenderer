@@ -46,3 +46,7 @@ The high level renderer consists of a few things such as resource loaders and sk
 Everything in the render system should be quite easy to understand. At some points I may still use my deprecated math library but that will also go into the bin. Especially the header of the render system is a big mess and contains lots of stuff that will need to be separated into different files. Also when looking at the header you might notice I create everything on the stack. This was for a old project and will be reverted to pointers soon enough.
 
 Shaders are located in `resources/engine` mostly. They are written rather quickly and can use a lot of optimization and improvements.
+
+## Vulkan
+
+You will probably also notice a folder called *vulkan* when looking at the project. This was a old implementation for the abstraction layer alongside D3D12. I however stopped maintaining it and won't work anymore. This will be removed soon to.
