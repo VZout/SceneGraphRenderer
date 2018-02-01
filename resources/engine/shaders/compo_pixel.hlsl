@@ -164,10 +164,6 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 
 	float3 result = hdr;
 
-	if (use_bloom == 1) {
-		result += bloom;
-	}
-
 	if (tonemapping == 0) result = linearToneMapping(hdr, exposure, gamma);
 	else if (tonemapping == 1) result = simpleReinhardToneMapping(hdr, exposure, gamma);
 	else if (tonemapping == 2) result = lumaBasedReinhardToneMapping(hdr, gamma);
@@ -179,6 +175,10 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	else if (tonemapping == 8) result = AllTonemappingAlgorithms(hdr, input.texCoord.x + input.texCoord.y, exposure, gamma);
 
 	// result = ApplyHue(result, 1);
+
+	if (use_bloom == 1) {
+		result += bloom; // has some problems with the size
+	}
 
 	result = mul(result, ContrastMatrix(contrast));
 

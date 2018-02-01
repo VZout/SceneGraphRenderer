@@ -95,7 +95,7 @@ void RenderSystem::ImGui_RenderGameView(IMGUI_RENDER_FUNC_PARAMS) {
 		ImGui::SetWindowFontScale(1);
 		ImGui::Button(">"); 
 		ImGui::SameLine();
-		ImGui::Button("||"); 
+		ImGui::Button("||");
 		ImGui::SameLine();
 		ImGui::Button("Stop"); 
 		ImGui::SameLine();

@@ -159,7 +159,7 @@ void Destroy(Resource& resource);
 
 // Texture
 void Load(Texture& texture, std::string const & path);
-void StageTexture(Texture& texture, Device& device, CommandList& cmd_list);
+void StageTexture(Texture& texture, Device& device, CommandList& cmd_list, bool dds = false);
 void Destroy(Texture& texture);
 
 // TextureArray

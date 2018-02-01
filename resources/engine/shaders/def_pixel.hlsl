@@ -3,6 +3,7 @@ Texture2D t1 : register(t1);
 Texture2D t2 : register(t2);
 Texture2D t3 : register(t3);
 Texture2D t4 : register(t5);
+TextureCube t_reflect : register(t6);
 SamplerState s0 : register(s0);
 
 struct Light {
@@ -126,6 +127,16 @@ float4x4 inverse(float4x4 input)
 	return transpose(cofactors) / determinant(input);
 }
 
+float4 calc_static_sky_reflection(float3 normal, float3 view_dir, float metalic_map) {
+	//float3 i = normalize(world_pos - view_pos);
+	float3 r = reflect(view_dir, normal);
+	float4 reflectColor = t_reflect.Sample(s0, r);
+	reflectColor = reflectColor * metalic_map;
+	reflectColor.a = 1;
+ 
+	return reflectColor;
+}
+
 struct PS_OUTPUT
 {
 	float4 deferred : SV_TARGET0;
@@ -146,6 +157,9 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 	float amb = 0.1 * albado * ssao;
 	float3 lighting = float3(amb, amb, amb);
 	float3 view_dir = normalize(frag_pos.xyz);
+
+	float4 reflect_color = calc_static_sky_reflection(normal, view_dir, t1.Sample(s0, input.texCoord).a);
+	albado += reflect_color;
 
 	float4x4 iv = transpose(inverse(-view));
 	float4 modelpos = mul(float4(frag_pos.xyz, 1.0), iv);
@@ -173,6 +187,7 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 		psout.overdose = float4(0.0, 0.0, 0.0, 1.0);
 
 	// HDR
+	//psout.overdose = float4(lighting, 1);
 	psout.deferred = float4(lighting, 1);
 	
 	return psout;

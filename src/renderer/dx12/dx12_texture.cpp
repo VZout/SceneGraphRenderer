@@ -1,6 +1,7 @@
 #include "dx12_texture.h"
 
 #include "../interface.h"
+#include "d3d12_dds_texture_loader.h"
 
 #include <D3Dcompiler.h>
 #include <fstream>
@@ -245,41 +246,53 @@ void Load(Texture& texture, std::string const & path) {
 
 	texture.buffer = (char*)malloc(size);
 	texture.size = size;
-	fin.read(texture.buffer,  size);
+	fin.read(texture.buffer, size);
 
 	LoadImageDataFromMemory(&texture.data, (uint8_t*)texture.buffer, texture.size, texture.desc, texture.bytes_per_row);
 }
 
-void StageTexture(Texture& texture, Device& device, CommandList& cmd_list) {
-	HRESULT hr = device.native->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&texture.desc,
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&texture.resource));
-	texture.resource->SetName(L"Default texture heap");
+void StageTexture(Texture& texture, Device& device, CommandList& cmd_list, bool dds) {
+	if (!dds) {
+		HRESULT hr = device.native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&texture.desc,
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(&texture.resource));
+		texture.resource->SetName(L"Default texture heap");
 
-	UINT64 textureUploadBufferSize;
-	device.native->GetCopyableFootprints(&texture.desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
+		UINT64 textureUploadBufferSize;
+		device.native->GetCopyableFootprints(&texture.desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 
-	hr = device.native->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&texture.staging_resource));
-	texture.staging_resource->SetName(L"Upload texture heap");
+		hr = device.native->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&texture.staging_resource));
+		texture.staging_resource->SetName(L"Upload texture heap");
 
-	D3D12_SUBRESOURCE_DATA textureData = {};
-	textureData.pData = &texture.data[0];
-	textureData.RowPitch = texture.bytes_per_row;
-	textureData.SlicePitch = texture.bytes_per_row * texture.desc.Height;
+		D3D12_SUBRESOURCE_DATA textureData = {};
+		textureData.pData = &texture.data[0];
+		textureData.RowPitch = texture.bytes_per_row;
+		textureData.SlicePitch = texture.bytes_per_row * texture.desc.Height;
 
-	UpdateSubresources(cmd_list.native, texture.resource, texture.staging_resource, 0, 0, 1, &textureData);
+		UpdateSubresources(cmd_list.native, texture.resource, texture.staging_resource, 0, 0, 1, &textureData);
 
-	cmd_list.native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+		cmd_list.native->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+	}
+	else {
+		texture.desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> _tc0;
+		Microsoft::WRL::ComPtr<ID3D12Resource> _tc1;
+		HRESULT hr = DirectX::CreateDDSTextureFromMemory12(device.native, cmd_list.native, (uint8_t*)texture.buffer, texture.size, _tc0, _tc1);
+		_tc0.CopyTo(IID_PPV_ARGS(&texture.resource));
+		_tc1.CopyTo(IID_PPV_ARGS(&texture.staging_resource));
+		texture.desc = texture.resource->GetDesc();
+	}
 }
 
 void Destroy(Texture& texture) {

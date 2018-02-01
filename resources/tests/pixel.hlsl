@@ -1,6 +1,7 @@
 Texture2D t0 : register(t0);
 Texture2D specular_texture : register(t1);
 Texture2D normal_texture : register(t2);
+Texture2D metal_texture : register(t3);
 SamplerState s0 : register(s0);
 
 struct VS_OUTPUT
@@ -35,6 +36,7 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 	PS_OUTPUT psout;
 	psout.albedo = dc;
 	psout.normal = float4(normalize(input.normal), 1);
+	psout.normal.w = metal_texture.Sample(s0, input.texCoord);
 	
 	psout.pos = input.frag;
 	psout.pos.w = linearDepth(input.pos.z);

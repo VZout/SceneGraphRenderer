@@ -29,20 +29,18 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	const float exposure = 1.0;
 
 	float4 bloom = float4(0, 0, 0, 0);
-	float2 res = float2(1280 , 720);
+	float2 res = float2(1280.f, 720.f);
 
-	float w = self_texture.Sample(s0, input.texCoord).w;
+	float2 uv = float2(input.texCoord) * 2.f;
+	float w = self_texture.Sample(s0, uv).w;
 
 	if (w > 0.60 && w < 0.7) {
-		float2 uv = float2(input.texCoord);
 		bloom = blur13(self_texture, uv, res, float2(1, 0));
 		w+= 0.01;
 	} else if (w > 0.70) {
-		float2 uv = float2(input.texCoord);
 		bloom = blur13(self_texture, uv, res, float2(0, 1));
 		w+= 0.01;
 	} else {
-		float2 uv = float2(input.texCoord);
 		bloom = blur13(overdose_texture, uv, res, float2(1, 0));
 		w = 0.65;
 	}

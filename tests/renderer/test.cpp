@@ -16,7 +16,9 @@ std::shared_ptr<rlr::DrawableNode> dr1;
 std::shared_ptr<rlr::DrawableNode> back_wall;
 std::shared_ptr<rlr::DrawableNode> left_wall;
 std::shared_ptr<rlr::DrawableNode> right_wall;
-rlr::Texture* texture = nullptr;
+rlr::Texture* spot_albedo = nullptr;
+rlr::Texture* spot_spec = nullptr;
+rlr::Texture* spot_metal = nullptr;
 rlr::Texture* floor_texture = nullptr;
 rlr::Texture* floor_texture_specular = nullptr;
 rlr::Texture* floor_texture_normal = nullptr;
@@ -66,7 +68,7 @@ void ImGui_Render() {
 
 void RegisterPipelines() {
 	CD3DX12_DESCRIPTOR_RANGE  desc_table_ranges;
-	desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0);
+	desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
 
 	rlr::RootSignature* rs = new rlr::RootSignature();
 	rlr::RootSignatureCreateInfo rs_info;
@@ -117,7 +119,9 @@ void RegisterPipelines() {
 }
 
 void Staging(rlr::Device* device, rlr::CommandList* cmd_list) {
-	StageTexture(*texture, *device, *cmd_list);
+	StageTexture(*spot_albedo, *device, *cmd_list);
+	StageTexture(*spot_spec, *device, *cmd_list);
+	StageTexture(*spot_metal, *device, *cmd_list);
 	StageTexture(*floor_texture, *device, *cmd_list);
 	StageTexture(*floor_texture_specular, *device, *cmd_list);
 	StageTexture(*floor_texture_normal, *device, *cmd_list);
@@ -151,7 +155,9 @@ int main() {
 	left_wall = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Left Wall", "basic");
 	right_wall = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Right Wall", "basic");
 
-	texture = new rlr::Texture();
+	spot_albedo = new rlr::Texture();
+	spot_spec = new rlr::Texture();
+	spot_metal = new rlr::Texture();
 	floor_texture = new rlr::Texture();
 	floor_texture_specular = new rlr::Texture();
 	floor_texture_normal = new rlr::Texture();
@@ -161,7 +167,9 @@ int main() {
 	wall_texture = new rlr::Texture();
 	wall_texture_specular = new rlr::Texture();
 	wall_texture_normal = new rlr::Texture();
-	rlr::Load(*texture, "resources/tests/spot.png");
+	rlr::Load(*spot_albedo, "resources/tests/spot.png");
+	rlr::Load(*spot_spec, "resources/tests/spot_specular.png");
+	rlr::Load(*spot_metal, "resources/tests/spot_metal.png");
 	rlr::Load(*floor_texture, "resources/tests/rustediron2_basecolor.png");
 	rlr::Load(*floor_texture_specular, "resources/tests/rustediron2_metallic.png");
 	rlr::Load(*floor_texture_normal, "resources/tests/rustediron2_normal.png");
@@ -188,8 +196,7 @@ int main() {
 
 	graph->InitAll();
 
-	std::vector<rlr::Texture*> textures = { texture, floor_texture, floor_texture };
-	std::vector<rlr::Texture*> spot_textures = { texture };
+	std::vector<rlr::Texture*> spot_textures = { spot_albedo, spot_spec, spot_albedo, spot_metal};
 	std::vector<rlr::Texture*> metal_textures = { metal_texture, metal_texture_specular, metal_texture_normal };
 	std::vector<rlr::Texture*> floor_textures = { floor_texture, floor_texture_specular, floor_texture_normal };
 	std::vector<rlr::Texture*> wall_textures = { wall_texture, wall_texture_specular };

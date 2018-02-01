@@ -140,6 +140,8 @@ public:
 
 	rlu::ThreadPool* thread_pool;
 
+	Texture sky_texture;
+
 	/*
 	GBuffer 0
 	GBuffer 1
@@ -147,6 +149,7 @@ public:
 	Shadow Depth
 	ssao noise
 	ssao blur
+	Sky texture
 	*/
 	DescriptorHeap srv_descriptor_heap_0;
 	RootSignature root_signature_0;

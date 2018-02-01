@@ -3,11 +3,11 @@
 #include <iostream>
 #include <vector>
 #include <d3d12.h>
-//#ifdef _DEBUG
+#ifdef _DEBUG
 #define INITGUID
 #include <DXGIDebug.h>
 #include <DirectXMath.h>
-//#endif
+#endif
 
 #include "dx12\imgui_impl_dx12.h"
 #include "dx12\d3dx12.h"
@@ -102,7 +102,7 @@ namespace rlr {
 		blur_rt_create_info.dsv_format = Format::D32_FLOAT;
 		blur_rt_create_info.rtv_formats[0] = Format::R16G16B16A16_UNORM;
 
-		Create(blur_render_target, device, *main_cmd_queue, width, height, blur_rt_create_info);
+		Create(blur_render_target, device, *main_cmd_queue, width/2, height/2, blur_rt_create_info);
 
 		// ssao
 		RenderTargetCreateInfo ssao_rt_create_info;
@@ -126,6 +126,7 @@ namespace rlr {
 
 
 	void RenderSystem::SetupDescriptorHeaps() {
+
 		// ### Descriptor Heap 0 ###
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC noise_texture_view_desc = {};
@@ -134,12 +135,21 @@ namespace rlr {
 			noise_texture_view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			noise_texture_view_desc.Texture2D.MipLevels = 1;
 
+			D3D12_SHADER_RESOURCE_VIEW_DESC sky_texture_view_desc = {};
+			sky_texture_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			sky_texture_view_desc.Format = sky_texture.desc.Format;
+			sky_texture_view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			sky_texture_view_desc.TextureCube.MipLevels = sky_texture.desc.MipLevels;
+			sky_texture_view_desc.TextureCube.ResourceMinLODClamp = 0;
+
 			DescHeapCPUHandle handle = GetCPUHandle(srv_descriptor_heap_0);
 			/* 0-2 */CreateSRVFromRTV(game_render_target, device, handle, game_render_target.create_info.num_rtv_formats, game_render_target.create_info.rtv_formats);
 			/* 3   */CreateSRVFromDSV(shadow_render_target, device, handle);
 			/* 4   */device.native->CreateShaderResourceView(ssao_texture.resource, &noise_texture_view_desc, handle.native);
 			Offset(handle, 1, srv_descriptor_heap_0.increment_size);
 			/* 5   */CreateSRVFromRTV(blur_ssao_render_target, device, handle, blur_ssao_render_target.create_info.num_rtv_formats, blur_ssao_render_target.create_info.rtv_formats);
+			/* 6   */device.native->CreateShaderResourceView(sky_texture.resource, &sky_texture_view_desc, handle.native);
+			Offset(handle, 1, srv_descriptor_heap_0.increment_size);
 		}
 		// ### Descriptor Heap 1 ###
 		{
@@ -157,7 +167,7 @@ namespace rlr {
 		/* ROOT SIGNATURE 0*/
 		{ 
 			CD3DX12_DESCRIPTOR_RANGE  desc_table_ranges;
-			desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0);
+			desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0);
 
 			rlr::RootSignatureCreateInfo rs_info;
 			rs_info.samplers.push_back({ TextureFilter::FILTER_POINT, TextureAddressMode::TAM_CLAMP });
@@ -222,7 +232,7 @@ namespace rlr {
 			Resize(deferred_render_target, device, *main_cmd_queue, width, height);
 			Resize(ssao_render_target, device, *main_cmd_queue, width, height);
 			Resize(blur_ssao_render_target, device, *main_cmd_queue, width, height);
-			Resize(blur_render_target, device, *main_cmd_queue, width, height);
+			Resize(blur_render_target, device, *main_cmd_queue, width/2, height/2);
 
 			if (!render_engine) {
 				composition_render_target = render_window; // Update pointer.
@@ -426,7 +436,10 @@ namespace rlr {
 		StageBuffer(quad_vb, *main_cmd_list);
 
 		rlr::Load(ssao_texture, "resources/engine/textures/ssao.png");
-		StageTexture(ssao_texture, device, *main_cmd_list);
+		rlr::Load(sky_texture, "resources/tests/sky.dds");
+
+		StageTexture(ssao_texture, device, *main_cmd_list); 
+		StageTexture(sky_texture, device, *main_cmd_list, true);
 
 		staging_func(&device, main_cmd_list);
 
@@ -459,7 +472,7 @@ namespace rlr {
 
 	void RenderSystem::CreateMainDescriptorHeap() {
 		DescriptorHeapCreateInfo heap_0_create_info;
-		heap_0_create_info.num_descriptors = 6;
+		heap_0_create_info.num_descriptors = 7;
 		heap_0_create_info.type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 		Create(srv_descriptor_heap_0, device, heap_0_create_info);
 
