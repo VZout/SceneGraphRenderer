@@ -2,10 +2,10 @@
 
 Names are capitalized in the same way as in most of the C++ standard.
 
-* function parameters use small_caps style
+* function parameters use snake_case style
 * template parameters use **C**amel**C**ase style
 * custom class names use **C**amel**C**ase style
-* variable names use small_caps style
+* variable names use snake_case style
 * macro and constant names use **ALL_CAPS** style
 
 # Spacing and indentation
