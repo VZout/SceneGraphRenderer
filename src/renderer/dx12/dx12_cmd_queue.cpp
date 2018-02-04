@@ -4,7 +4,7 @@
 
 namespace rlr {
 
-void Create(CommandQueue& cmd_queue, Device& device, CmdQueueType type) {
+void Create(CommandQueue* cmd_queue, Device* device, CmdQueueType type) {
 	D3D12_COMMAND_QUEUE_DESC cmd_queue_desc = {};
 	cmd_queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
@@ -18,26 +18,26 @@ void Create(CommandQueue& cmd_queue, Device& device, CmdQueueType type) {
 		break;
 	}
 
-	HRESULT hr = device.native->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&cmd_queue.native));
+	HRESULT hr = device->native->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&cmd_queue->native));
 	if (FAILED(hr)) {
 		throw "Failed to create DX12 command queue.";
 	}
-	cmd_queue.native->SetName(L"Thisismycommandqueue");
+	cmd_queue->native->SetName(L"Thisismycommandqueue");
 }
 
-void Execute(CommandQueue& cmd_queue, std::vector<CommandList> cmd_lists, Fence fence) {
+void Execute(CommandQueue* cmd_queue, std::vector<CommandList> cmd_lists, Fence* fence) {
 	ID3D12CommandList** lists = new ID3D12CommandList*[cmd_lists.size()];
 	for (auto i = 0; i < cmd_lists.size(); i++) {
 		lists[i] = cmd_lists[i].native;
 	}
 
-	cmd_queue.native->ExecuteCommandLists(cmd_lists.size(), lists);
+	cmd_queue->native->ExecuteCommandLists(cmd_lists.size(), lists);
 
 	Signal(fence, cmd_queue);
 }
 
-void Destroy(CommandQueue& cmd_queue) {
-	cmd_queue.native->Release();
+void Destroy(CommandQueue* cmd_queue) {
+	cmd_queue->native->Release();
 }
 
 } /* rlr */

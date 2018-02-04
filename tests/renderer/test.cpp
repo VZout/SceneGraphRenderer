@@ -34,7 +34,6 @@ static int num_floors = 1;
 
 bool first = true;
 bool opened = true;
-float v = 1;
 bool show_engine = true;
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame;
@@ -206,7 +205,7 @@ int main() {
 	}
 
 	for (std::map<int, rlr::Batch*>::iterator it = render_system->static_instanced_batches.begin(); it != render_system->static_instanced_batches.end(); it++) {
-		Create(it->second->instanced_staging_buffer, render_system->device, it->second->inst_positions.data(), it->second->inst_positions.size() * sizeof(fm::vec3), sizeof(fm::vec3), rlr::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		Create(it->second->instanced_staging_buffer, *render_system->device, it->second->inst_positions.data(), it->second->inst_positions.size() * sizeof(fm::vec3), sizeof(fm::vec3), rlr::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 	}
 
 	dr1->model->meshes[0].skeleton.PlayAnimation(dr1->model->animations[0]);

@@ -4,8 +4,8 @@
 namespace rlr {
 
 Drawable::Drawable(RenderSystem& render_system) : render_system(render_system) {
-	Create(const_buffer, render_system.device, sizeof(CBStruct));
-	Create(shadow_const_buffer, render_system.device, sizeof(CBStruct));
+	Create(const_buffer, *render_system.device, sizeof(CBStruct));
+	Create(shadow_const_buffer, *render_system.device, sizeof(CBStruct));
 }
 
 Drawable::~Drawable() {
@@ -16,7 +16,7 @@ Drawable::~Drawable() {
 }
 
 void Drawable::SetTextures(std::vector<Texture*> textures) {
-	Create(ta, render_system.device, textures);
+	Create(ta, *render_system.device, textures);
 }
 
 } /* rlr */

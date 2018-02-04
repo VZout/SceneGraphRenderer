@@ -226,12 +226,12 @@ void RenderSystem::ImGui_RenderPerformanceOverlay() {
 void RenderSystem::ImGui_RenderHardwareDetails(IMGUI_RENDER_FUNC_PARAMS) {
 	if (ImGui::BeginDock("Hardware Details", &imgui_show_cam_properties)) {
 		if (ImGui::CollapsingHeader("System Information", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Text("Page Size: %i", device.sys_info.dwPageSize);
-			ImGui::Text("Application Address Range: %i - %i", device.sys_info.lpMinimumApplicationAddress, device.sys_info.lpMaximumApplicationAddress);
-			ImGui::Text("Active Processor Mask: %i", device.sys_info.dwActiveProcessorMask);
-			ImGui::Text("Processor Count: %i", device.sys_info.dwNumberOfProcessors);
+			ImGui::Text("Page Size: %i", device->sys_info.dwPageSize);
+			ImGui::Text("Application Address Range: %i - %i", device->sys_info.lpMinimumApplicationAddress, device->sys_info.lpMaximumApplicationAddress);
+			ImGui::Text("Active Processor Mask: %i", device->sys_info.dwActiveProcessorMask);
+			ImGui::Text("Processor Count: %i", device->sys_info.dwNumberOfProcessors);
 
-			switch (device.sys_info.wProcessorArchitecture) {
+			switch (device->sys_info.wProcessorArchitecture) {
 			case 9: ImGui::Text("Processor Architecture: %s", "PROCESSOR_ARCHITECTURE_AMD64"); break;
 			case 5: ImGui::Text("Processor Architecture: %s", "PROCESSOR_ARCHITECTURE_ARM"); break;
 			case 6: ImGui::Text("Processor Architecture: %s", "PROCESSOR_ARCHITECTURE_IA64"); break;
@@ -241,18 +241,18 @@ void RenderSystem::ImGui_RenderHardwareDetails(IMGUI_RENDER_FUNC_PARAMS) {
 		}
 
 		if (ImGui::CollapsingHeader("Graphics Adapter Information", ImGuiTreeNodeFlags_DefaultOpen)) {
-			std::wstring wdesc(device.adapter_info.Description);
+			std::wstring wdesc(device->adapter_info.Description);
 			using convert_type = std::codecvt_utf8<wchar_t>;
 			std::wstring_convert<convert_type, wchar_t> converter;
 			std::string desc = converter.to_bytes(wdesc);
 
 			ImGui::Text("Description: %s", desc.c_str());
-			ImGui::Text("Vendor ID: %i", device.adapter_info.VendorId);
-			ImGui::Text("Device ID: %i", device.adapter_info.DeviceId);
-			ImGui::Text("Subsystem ID: %i", device.adapter_info.SubSysId);
-			ImGui::Text("Dedicated Video Memory: %i", device.adapter_info.DedicatedVideoMemory);
-			ImGui::Text("Dedicated System Memory: %i", device.adapter_info.DedicatedSystemMemory);
-			ImGui::Text("Shared System Memory: %i", device.adapter_info.SharedSystemMemory);
+			ImGui::Text("Vendor ID: %i", device->adapter_info.VendorId);
+			ImGui::Text("Device ID: %i", device->adapter_info.DeviceId);
+			ImGui::Text("Subsystem ID: %i", device->adapter_info.SubSysId);
+			ImGui::Text("Dedicated Video Memory: %i", device->adapter_info.DedicatedVideoMemory);
+			ImGui::Text("Dedicated System Memory: %i", device->adapter_info.DedicatedSystemMemory);
+			ImGui::Text("Shared System Memory: %i", device->adapter_info.SharedSystemMemory);
 		}
 	}
 	if (dock && imgui_show_cam_properties) ImGui::LetsDock(use_last_as_dest, style);

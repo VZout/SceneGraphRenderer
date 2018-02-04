@@ -9,35 +9,38 @@
 
 namespace rlr {
 
-void Allocate(CommandList& cmd_list, Device& device, unsigned int num) {
-	cmd_list.num_allocators = num;
-	cmd_list.allocators = new ID3D12CommandAllocator*[num];
+void Allocate(CommandList** cmd_list, Device& device, unsigned int num) {
+	CommandList* new_cmd_list = new CommandList();
+
+	new_cmd_list->num_allocators = num;
+	new_cmd_list->allocators = new ID3D12CommandAllocator*[num];
 
 	// Create the allocators
 	for (int i = 0; i < num; i++) {
-		HRESULT hr = device.native->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&cmd_list.allocators[i]));
+		HRESULT hr = device.native->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&new_cmd_list->allocators[i]));
 		if (FAILED(hr)) {
 			throw "Failed to create command allocator";
 		}
 
-		cmd_list.allocators[i]->SetName(L"CommandList allocator.");
+		new_cmd_list->allocators[i]->SetName(L"CommandList allocator.");
 	}
 
 	// Create the command lists
 	HRESULT hr = device.native->CreateCommandList(
 		0,
 		D3D12_COMMAND_LIST_TYPE_DIRECT,
-		cmd_list.allocators[0],
+		new_cmd_list->allocators[0],
 		NULL,
-		IID_PPV_ARGS(&cmd_list.native)
+		IID_PPV_ARGS(&new_cmd_list->native)
 	);
 	if (FAILED(hr)) {
 		throw "Failed to create command list";
 	}
 
-	cmd_list.native->SetName(L"Native Commandlist");
+	new_cmd_list->native->SetName(L"Native Commandlist");
+	new_cmd_list->native->Close(); // TODO: Can be optimized away.
 
-	cmd_list.native->Close();
+	(*cmd_list) = new_cmd_list;
 }
 
 void Begin(CommandList& cmd_list, unsigned int frame_idx) {
@@ -118,10 +121,10 @@ void Bind(CommandList& cmd_list, Viewport& viewport) {
 	cmd_list.native->RSSetScissorRects(1, &viewport.scissor_rect); // set the scissor rects
 }
 
-void Bind(CommandList& cmd_list, std::vector<DescriptorHeap>& heaps) {
+void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> heaps) {
 	std::array<ID3D12DescriptorHeap*, 4> native_heaps;
 	for (auto i = 0; i < heaps.size(); i++) {
-		native_heaps[i] = heaps[i].native;
+		native_heaps[i] = heaps[i]->native;
 	}
 
 	cmd_list.native->SetDescriptorHeaps(heaps.size(), native_heaps.data());

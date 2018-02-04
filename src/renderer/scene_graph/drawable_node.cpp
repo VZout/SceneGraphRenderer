@@ -15,14 +15,14 @@ DrawableNode::~DrawableNode() {
 }
 
 void DrawableNode::SetTextures(std::vector<Texture*> textures) {
-	rlr::Create(*ta, m_render_system.device, textures);
+	rlr::Create(*ta, *m_render_system.device, textures);
 }
 
 void DrawableNode::Init() {
 	const_buffer = new rlr::ConstantBuffer();
 	shadow_const_buffer = new rlr::ConstantBuffer();
-	Create(*const_buffer, m_render_system.device, sizeof(rlr::CBStruct));
-	Create(*shadow_const_buffer, m_render_system.device, sizeof(rlr::CBStruct));
+	Create(*const_buffer, *m_render_system.device, sizeof(rlr::CBStruct));
+	Create(*shadow_const_buffer, *m_render_system.device, sizeof(rlr::CBStruct));
 
 	if (m_instanced) {
 		m_render_system.static_inst_needs_staging = true;

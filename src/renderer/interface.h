@@ -32,13 +32,13 @@ RLR_HANDLE TextureArray;
 RLR_HANDLE Resource;
 
 // Device
-void Create(Device& device);
-void Destroy(Device& device);
+void Create(Device** device);
+void Destroy(Device* device);
 
 // CommandQueue
-void Create(CommandQueue& cmd_queue, Device& device, CmdQueueType type);
-void Execute(CommandQueue& cmd_queue, std::vector<CommandList> cmd_lists, Fence fence);
-void Destroy(CommandQueue& cmd_queue);
+void Create(CommandQueue* cmd_queue, Device* device, CmdQueueType type);
+void Execute(CommandQueue* cmd_queue, std::vector<CommandList> cmd_lists, Fence* fence);
+void Destroy(CommandQueue* cmd_queue);
 
 // Descriptor Heap
 struct DescriptorHeapCreateInfo {
@@ -47,12 +47,12 @@ struct DescriptorHeapCreateInfo {
 	bool shader_visible = true;
 };
 
-void Create(DescriptorHeap& cmd_queue, Device& device, DescriptorHeapCreateInfo& create_info);
-DescHeapGPUHandle GetGPUHandle(DescriptorHeap& heap, int index = 0);
-DescHeapCPUHandle GetCPUHandle(DescriptorHeap& heap, int index = 0);
+void Create(DescriptorHeap** hep, Device* device, DescriptorHeapCreateInfo const & create_info);
+[[nodiscard]] DescHeapGPUHandle GetGPUHandle(DescriptorHeap* heap, int index = 0);
+[[nodiscard]] DescHeapCPUHandle GetCPUHandle(DescriptorHeap* heap, int index = 0);
 void Offset(DescHeapGPUHandle& handle, int index, int increment_size);
 void Offset(DescHeapCPUHandle& handle, int index, int increment_size);
-void Destroy(DescriptorHeap& cmd_queue);
+void Destroy(DescriptorHeap* cmd_queue);
 
 // RenderTarget
 struct RenderTargetCreateInfo {
@@ -81,7 +81,7 @@ void Present(RenderWindow& render_window, CommandQueue& cmd_queue, Device& devic
 void Destroy(RenderWindow& render_window);
 
 // CommandList
-void Allocate(CommandList& cmd_list, Device& device, unsigned int num = 1);
+void Allocate(CommandList** cmd_list, Device& device, unsigned int num = 1);
 void Begin(CommandList& cmd_list, unsigned int frame_idx);
 void End(CommandList& cmd_list);
 void Bind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx, bool clear = true, bool deferred = false, bool temp_compo = false);
@@ -91,7 +91,7 @@ void Bind(CommandList& cmd_list, PipelineState& pipeline_state);
 void Bind(CommandList& cmd_list, ConstantBuffer& buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 void Bind(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
-void Bind(CommandList& cmd_list, std::vector<DescriptorHeap>& heaps);
+void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> heaps);
 void BindVertexBuffer(CommandList& cmd_list, StagingBuffer& buffer);
 void BindIndexBuffer(CommandList& cmd_list, StagingBuffer& buffer, unsigned int offset = 0);
 void Draw(CommandList& cmd_list, unsigned int vertex_count, unsigned int inst_count);
@@ -101,10 +101,10 @@ void Transition(CommandList& cmd_list, RenderTarget& render_target, ResourceStat
 void Destroy(CommandList& cmd_list);
 
 // Fence
-void Create(Fence& fence, Device& device);
-void Signal(Fence& fence, CommandQueue& cmd_queue);
-void WaitFor(Fence& fence, Device& device);
-void Destroy(Fence& fence);
+void Create(Fence** fence, Device* device);
+void Signal(Fence* fence, CommandQueue* cmd_queue);
+void WaitFor(Fence* fence);
+void Destroy(Fence* fence);
 
 // Pipeline
 struct PipelineStateCreateInfo {

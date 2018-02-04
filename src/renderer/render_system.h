@@ -16,40 +16,17 @@
 #include <chrono>
 #include <functional>
 
-#include <DirectXMath.h>
-#include <map>
-#include <thread>
-#include <mutex>
-#include <queue>
-#include <future>
-
 #include "model.h"
 
 #include "scene_graph\scene_graph.h"
 #include "scene_graph\drawable_node.h"
 
+#define REDUCE_PIPELINE_STATE_CHANGES
+#include "render_system_defines.h"
+
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define REDUCE_PIPELINE_STATE_CHANGES
-
-static int num_pipeline_changes = 0;
-#ifdef REDUCE_PIPELINE_STATE_CHANGES
-#define BIND_PIPELINE(cmd_list, pipeline_id) PipelineState* ps = GetPipeline(pipeline_id); \
-	if (ps != last_pipeline_state) { \
-		Bind(cmd_list, *ps); \
-		last_pipeline_state = ps; \
-		num_pipeline_changes++; \
-	}
-#else
-#define BIND_PIPELINE(cmd_list, pipeline_id) Bind(cmd_list, *GetPipeline(pipeline_id));
-#endif
-
-#define NUM_LIGHTS 10 // todo: REMOVE THIS
-#define KERNEL_SIZE 32
-
-#define IMGUI_RENDER_FUNC_PARAMS bool dock, bool use_last_as_dest, ImGui::DockStyle style
-#define IMGUI_RENDER_FUNC_DEFAULT_PARAMS bool dock = false, bool use_last_as_dest = true, ImGui::DockStyle style = ImGui::DockStyle::CENTER
 
 namespace rlu {
 	class ThreadPool;
@@ -60,52 +37,7 @@ class DrawableNode;
 namespace rlr {
 
 struct Model;
-
-struct PVCBStruct {
-	DirectX::XMFLOAT4X4 view;
-	DirectX::XMFLOAT4X4 proj;
-};
-
-struct CBStruct {
-	std::array<aiMatrix4x4, 100> weightmatrices;
-	DirectX::XMFLOAT4X4 model;
-	float instanced = 0;
-	float shita = 0;
-	float shitb = 1;
-	float shitc = 2;
-};
-
-struct CBCompo {
-	float exposure;
-	float gamma;
-	float contrast;
-	int tonemapping = 0;
-	int bloom;
-};
-
-struct Light {
-	fm::vec4 pos = fm::vec4(0, 0, 0);
-	fm::vec4 color = fm::vec4(0, 0, 0);
-	float constant = 1.f;
-	float lin = 0.09f;
-	float quadratic = 0.2f;
-	float radius = 0;
-};
-
-struct CBSceneStruct {
-	DirectX::XMFLOAT4X4 view;
-	DirectX::XMFLOAT4X4 proj;
-	DirectX::XMFLOAT4X4 shadow_view;
-	DirectX::XMFLOAT4X4 shadow_proj;
-	std::array<Light, NUM_LIGHTS> lights;
-	unsigned int num_lights;
-};
-
-struct CBSSAOStruct {
-	DirectX::XMFLOAT4X4 view;
-	DirectX::XMFLOAT4X4 proj;
-	std::array<fm::vec4, KERNEL_SIZE> samples;
-};
+struct Material;
 
 struct Batch {
 	DrawableNode* inst_drawable;
@@ -114,7 +46,6 @@ struct Batch {
 	StagingBuffer instanced_staging_buffer;
 };
 
-struct Material;
 
 class RenderSystem {
 	friend class Drawable;
@@ -130,7 +61,7 @@ private:
 
 	Window& window;
 public:
-	Device device;
+	Device* device;
 
 	CommandQueue* main_cmd_queue;
 	CommandList* main_cmd_list;
@@ -151,22 +82,22 @@ public:
 	ssao blur
 	Sky texture
 	*/
-	DescriptorHeap srv_descriptor_heap_0;
+	DescriptorHeap* srv_descriptor_heap_0;
 	RootSignature root_signature_0;
 	/*
 	ssao
 	*/
-	DescriptorHeap srv_descriptor_heap_1;
+	DescriptorHeap* srv_descriptor_heap_1;
 	RootSignature root_signature_1;
 	/*
 	deferred hdr
 	deferred overdose
 	overdosed blur
 	*/
-	DescriptorHeap srv_descriptor_heap_2;
+	DescriptorHeap* srv_descriptor_heap_2;
 	RootSignature root_signature_2;
 
-	DescriptorHeap imgui_descriptor_heap;
+	DescriptorHeap* imgui_descriptor_heap;
 
 	// Instanced
 	std::map<int, Batch*> static_instanced_batches;
@@ -215,7 +146,7 @@ public:
 
 	RenderTarget composition_render_target;
 
-	Fence fence[3];
+	std::array<Fence*, 3> fences;
 	Viewport viewport;
 	Viewport shadow_viewport;
 	Camera* cam;
@@ -236,7 +167,7 @@ public:
 
 	void Populate_Drawables(CommandList& cmd_list, std::vector<Drawable*>& drawables, Camera const& camera, int begin, int end, bool shadows = false);
 	void Populate_InstancedDrawables(CommandList& cmd_list, Camera const& camera);
-	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap& srv_heap);
+	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap);
 
 	void SetupSwapchain(int width, int height);
 	void SetupDescriptorHeaps();

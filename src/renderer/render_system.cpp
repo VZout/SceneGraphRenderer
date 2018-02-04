@@ -19,8 +19,6 @@
 
 #include "util\thread_pool.h"
 
-#define SHADOW_SIZE 2048
-
 namespace rlr {
 
 	RenderSystem::RenderSystem(Window& window) : window(window) {
@@ -33,8 +31,8 @@ namespace rlr {
 
 	RenderSystem::~RenderSystem() {
 		for (auto i = 0; i < 3; i++) {
-			WaitFor(fence[i], device);
-			Destroy(fence[i]);
+			WaitFor(fences[i]);
+			Destroy(fences[i]);
 		}
 
 		ImGui_ImplDX12_Shutdown();
@@ -46,9 +44,9 @@ namespace rlr {
 		Destroy(*main_cmd_list);
 		Destroy(render_window);
 		Destroy(game_render_target);
-		Destroy(*main_cmd_queue);
-		Destroy(device);
-
+		Destroy(main_cmd_queue);
+		
+		delete device;
 		delete main_cmd_queue;
 
 //#ifdef _DEBUG
@@ -60,7 +58,7 @@ namespace rlr {
 	}
 
 	void RenderSystem::SetupSwapchain(int width, int height) {
-		Create(render_window, device, window, *main_cmd_queue);
+		Create(render_window, *device, window, *main_cmd_queue);
 
 		RenderTargetCreateInfo game_rt_create_info;
 		game_rt_create_info.num_rtv_formats = 3;
@@ -69,14 +67,14 @@ namespace rlr {
 		game_rt_create_info.rtv_formats[1] = Format::R16G16B16A16_FLOAT; // normal
 		game_rt_create_info.rtv_formats[2] = Format::R16G16B16A16_FLOAT; // position
 
-		Create(game_render_target, device, *main_cmd_queue, width, height, game_rt_create_info);
+		Create(game_render_target, *device, *main_cmd_queue, width, height, game_rt_create_info);
 
 		RenderTargetCreateInfo shadow_rt_create_info;
 		shadow_rt_create_info.num_rtv_formats = 1;
 		shadow_rt_create_info.dsv_format = Format::D32_FLOAT;
 		shadow_rt_create_info.rtv_formats[0] = Format::R8G8B8A8_UNORM;
 
-		Create(shadow_render_target, device, *main_cmd_queue, SHADOW_SIZE, SHADOW_SIZE, shadow_rt_create_info);
+		Create(shadow_render_target, *device, *main_cmd_queue, SHADOW_SIZE, SHADOW_SIZE, shadow_rt_create_info);
 
 		RenderTargetCreateInfo deferred_rt_create_info;
 		deferred_rt_create_info.num_rtv_formats = 2;
@@ -85,7 +83,7 @@ namespace rlr {
 		deferred_rt_create_info.rtv_formats[0] = Format::R16G16B16A16_UNORM;
 		deferred_rt_create_info.rtv_formats[1] = Format::R16G16B16A16_UNORM;
 
-		Create(deferred_render_target, device, *main_cmd_queue, width, height, deferred_rt_create_info);
+		Create(deferred_render_target, *device, *main_cmd_queue, width, height, deferred_rt_create_info);
 
 		RenderTargetCreateInfo imgui_rt_create_info;
 		imgui_rt_create_info.num_rtv_formats = 1;
@@ -93,7 +91,7 @@ namespace rlr {
 		imgui_rt_create_info.dsv_format = Format::D32_FLOAT;
 		imgui_rt_create_info.rtv_formats[0] = Format::R8G8B8A8_UNORM;
 
-		Create(imgui_game_render_target, device, *main_cmd_queue, width, height, imgui_rt_create_info);
+		Create(imgui_game_render_target, *device, *main_cmd_queue, width, height, imgui_rt_create_info);
 
 		// blur
 		RenderTargetCreateInfo blur_rt_create_info;
@@ -102,7 +100,7 @@ namespace rlr {
 		blur_rt_create_info.dsv_format = Format::D32_FLOAT;
 		blur_rt_create_info.rtv_formats[0] = Format::R16G16B16A16_UNORM;
 
-		Create(blur_render_target, device, *main_cmd_queue, width/2, height/2, blur_rt_create_info);
+		Create(blur_render_target, *device, *main_cmd_queue, width/2, height/2, blur_rt_create_info);
 
 		// ssao
 		RenderTargetCreateInfo ssao_rt_create_info;
@@ -111,10 +109,10 @@ namespace rlr {
 		ssao_rt_create_info.dsv_format = Format::D32_FLOAT;
 		ssao_rt_create_info.rtv_formats[0] = Format::R8_UNORM; // ssao
 
-		Create(ssao_render_target, device, *main_cmd_queue, width, height, ssao_rt_create_info);
+		Create(ssao_render_target, *device, *main_cmd_queue, width, height, ssao_rt_create_info);
 
 		// ssao blur
-		Create(blur_ssao_render_target, device, *main_cmd_queue, width, height, ssao_rt_create_info);
+		Create(blur_ssao_render_target, *device, *main_cmd_queue, width, height, ssao_rt_create_info);
 
 		if (render_engine) {
 			composition_render_target = imgui_game_render_target;
@@ -143,23 +141,23 @@ namespace rlr {
 			sky_texture_view_desc.TextureCube.ResourceMinLODClamp = 0;
 
 			DescHeapCPUHandle handle = GetCPUHandle(srv_descriptor_heap_0);
-			/* 0-2 */CreateSRVFromRTV(game_render_target, device, handle, game_render_target.create_info.num_rtv_formats, game_render_target.create_info.rtv_formats);
-			/* 3   */CreateSRVFromDSV(shadow_render_target, device, handle);
-			/* 4   */device.native->CreateShaderResourceView(ssao_texture.resource, &noise_texture_view_desc, handle.native);
-			Offset(handle, 1, srv_descriptor_heap_0.increment_size);
-			/* 5   */CreateSRVFromRTV(blur_ssao_render_target, device, handle, blur_ssao_render_target.create_info.num_rtv_formats, blur_ssao_render_target.create_info.rtv_formats);
-			/* 6   */device.native->CreateShaderResourceView(sky_texture.resource, &sky_texture_view_desc, handle.native);
-			Offset(handle, 1, srv_descriptor_heap_0.increment_size);
+			/* 0-2 */CreateSRVFromRTV(game_render_target, *device, handle, game_render_target.create_info.num_rtv_formats, game_render_target.create_info.rtv_formats);
+			/* 3   */CreateSRVFromDSV(shadow_render_target, *device, handle);
+			/* 4   */device->native->CreateShaderResourceView(ssao_texture.resource, &noise_texture_view_desc, handle.native);
+			Offset(handle, 1, srv_descriptor_heap_0->increment_size);
+			/* 5   */CreateSRVFromRTV(blur_ssao_render_target, *device, handle, blur_ssao_render_target.create_info.num_rtv_formats, blur_ssao_render_target.create_info.rtv_formats);
+			/* 6   */device->native->CreateShaderResourceView(sky_texture.resource, &sky_texture_view_desc, handle.native);
+			Offset(handle, 1, srv_descriptor_heap_0->increment_size);
 		}
 		// ### Descriptor Heap 1 ###
 		{
 			DescHeapCPUHandle handle = GetCPUHandle(srv_descriptor_heap_1);
-			/* 0   */CreateSRVFromRTV(ssao_render_target, device, handle, ssao_render_target.create_info.num_rtv_formats, ssao_render_target.create_info.rtv_formats);
+			/* 0   */CreateSRVFromRTV(ssao_render_target, *device, handle, ssao_render_target.create_info.num_rtv_formats, ssao_render_target.create_info.rtv_formats);
 		}
 		// ### Descriptor Heap 2 ###
 		{
 			DescHeapCPUHandle handle = GetCPUHandle(srv_descriptor_heap_2);
-			CreateSRVFromRTV(deferred_render_target, device, handle, deferred_render_target.create_info.num_rtv_formats, deferred_render_target.create_info.rtv_formats);
+			CreateSRVFromRTV(deferred_render_target, *device, handle, deferred_render_target.create_info.num_rtv_formats, deferred_render_target.create_info.rtv_formats);
 		}
 	}
 
@@ -177,7 +175,7 @@ namespace rlr {
 			rs_info.parameters[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
 			Create(root_signature_0, rs_info);
-			Finalize(root_signature_0, device);
+			Finalize(root_signature_0, *device);
 		}
 
 		/* ROOT SIGNATURE 1*/
@@ -193,7 +191,7 @@ namespace rlr {
 			rs_info.parameters[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
 			Create(root_signature_1, rs_info);
-			Finalize(root_signature_1, device);
+			Finalize(root_signature_1, *device);
 		}
 
 		/* ROOT SIGNATURE 2*/
@@ -209,7 +207,7 @@ namespace rlr {
 			rs_info.parameters[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
 			Create(root_signature_2, rs_info);
-			Finalize(root_signature_2, device);
+			Finalize(root_signature_2, *device);
 		}
 	}
 
@@ -217,28 +215,28 @@ namespace rlr {
 		window.BindOnResize([&](int width, int height) {
 			// Make sure all command queues are finished.
 			for (auto i = 0; i < 3; i++) {
-				WaitFor(fence[i], device);
-				Signal(fence[i], *main_cmd_queue); // If I don't signal them they will be stuck when calling waitfor at the beginning of the frame.
+				WaitFor(fences[i]);
+				Signal(fences[i], main_cmd_queue); // If I don't signal them they will be stuck when calling waitfor at the beginning of the frame.
 			}
 
 			cam->SetAspectRatio((float)width / (float)height);
 
-			srv_descriptor_heap_0.native->Release();
-			srv_descriptor_heap_1.native->Release();
-			srv_descriptor_heap_2.native->Release();
+			Destroy(srv_descriptor_heap_0);
+			Destroy(srv_descriptor_heap_1);
+			Destroy(srv_descriptor_heap_2);
 
-			Resize(render_window, device, *main_cmd_queue, width, height);
-			Resize(game_render_target, device, *main_cmd_queue, width, height);
-			Resize(deferred_render_target, device, *main_cmd_queue, width, height);
-			Resize(ssao_render_target, device, *main_cmd_queue, width, height);
-			Resize(blur_ssao_render_target, device, *main_cmd_queue, width, height);
-			Resize(blur_render_target, device, *main_cmd_queue, width/2, height/2);
+			Resize(render_window, *device, *main_cmd_queue, width, height);
+			Resize(game_render_target, *device, *main_cmd_queue, width, height);
+			Resize(deferred_render_target, *device, *main_cmd_queue, width, height);
+			Resize(ssao_render_target, *device, *main_cmd_queue, width, height);
+			Resize(blur_ssao_render_target, *device, *main_cmd_queue, width, height);
+			Resize(blur_render_target, *device, *main_cmd_queue, width/2, height/2);
 
 			if (!render_engine) {
 				composition_render_target = render_window; // Update pointer.
 			}
 			else {
-				Resize(imgui_game_render_target, device, *main_cmd_queue, width, height);
+				Resize(imgui_game_render_target, *device, *main_cmd_queue, width, height);
 				composition_render_target = imgui_game_render_target;
 			}
 
@@ -263,64 +261,59 @@ namespace rlr {
 
 			End(*imgui_cmd_list);
 			std::vector<CommandList> cmd_lists = { *imgui_cmd_list };
-			Execute(*main_cmd_queue, cmd_lists, fence[render_window.frame_idx]);
-			Signal(fence[render_window.frame_idx], *main_cmd_queue);
+			Execute(main_cmd_queue, cmd_lists, fences[render_window.frame_idx]);
+			Signal(fences[render_window.frame_idx], main_cmd_queue);
 		});
 
 		int width, height;
 		window.GetSize(&width, &height);
 
-		Create(device);
+		Create(&device);
 
 		main_cmd_queue = new CommandQueue();
-		Create(*main_cmd_queue, device, CmdQueueType::CMD_QUEUE_DIRECT);
+		Create(main_cmd_queue, device, CmdQueueType::CMD_QUEUE_DIRECT);
 
 		CreateMainDescriptorHeap();
 
 		SetupSwapchain(width, height);
 
-		main_cmd_list = new CommandList();
-		Allocate(*main_cmd_list, device, 3);
+		Allocate(&main_cmd_list, *device, 3);
 		main_cmd_list->native->SetName(L"Maincmd");
 
-		imgui_cmd_list = new CommandList();
-		Allocate(*imgui_cmd_list, device, 3);
+		Allocate(&imgui_cmd_list, *device, 3);
 		imgui_cmd_list->native->SetName(L"imgui");
 
-		shadow_cmd_list = new CommandList();
-		Allocate(*shadow_cmd_list, device, 3);
+		Allocate(&shadow_cmd_list, *device, 3);
 		shadow_cmd_list->native->SetName(L"shadow cmd");
 
-		deferred_cmd_list = new CommandList();
-		Allocate(*deferred_cmd_list, device, 3);
+		Allocate(&deferred_cmd_list, *device, 3);
 		deferred_cmd_list->native->SetName(L"deferred cmd");
 
-		ssao_cmd_list = new CommandList();
-		Allocate(*ssao_cmd_list, device, 3);
+		Allocate(&ssao_cmd_list, *device, 3);
 		ssao_cmd_list->native->SetName(L"ssao cmd");
 
 		Create(viewport, width, height);
 		Create(shadow_viewport, SHADOW_SIZE, SHADOW_SIZE);
 
-		for (auto i = 0; i < 3; i++) {
-			Create(fence[i], device);
+		for (auto i = 0; i < fences.size(); i++) {
+			Create(&fences[i], device);
 		}
 
-		Create(deferred_const_buffer, device, sizeof(CBSceneStruct));
-		Create(ssao_const_buffer, device, sizeof(CBSSAOStruct));
-		Create(projection_view_const_buffer, device, sizeof(PVCBStruct));
-		Create(shadow_projection_view_const_buffer, device, sizeof(PVCBStruct));
+		Create(deferred_const_buffer, *device, sizeof(CBSceneStruct));
+		Create(ssao_const_buffer, *device, sizeof(CBSSAOStruct));
+		Create(projection_view_const_buffer, *device, sizeof(PVCBStruct));
+		Create(shadow_projection_view_const_buffer, *device, sizeof(PVCBStruct));
 
 		DescriptorHeapCreateInfo imgui_heap_create_info;
 		imgui_heap_create_info.num_descriptors = 4;
 		imgui_heap_create_info.type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		Create(imgui_descriptor_heap, device, imgui_heap_create_info);
+		Create(&imgui_descriptor_heap, device, imgui_heap_create_info);
 
-		Create(compo_const_buffer, device, sizeof(CBCompo));
+		Create(compo_const_buffer, *device, sizeof(CBCompo));
 
 		//if (render_engine) {
 		ImGui::ApplyCustomStyle();
-		ImGui_ImplDX12_Init(window.native, render_window.num_back_buffers, device.native, imgui_cmd_list->native,
+		ImGui_ImplDX12_Init(window.native, render_window.num_back_buffers, device->native, imgui_cmd_list->native,
 			GetCPUHandle(imgui_descriptor_heap),
 			GetGPUHandle(imgui_descriptor_heap));
 		ImGui_ImplDX12_CreateDeviceObjects();
@@ -328,12 +321,12 @@ namespace rlr {
 	}
 
 	void RenderSystem::CreateSRVFromSwapchain() {
-		int offsetsize = device.native->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		int offset_size = device->native->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		DescHeapCPUHandle rtv_handle(GetCPUHandle(imgui_descriptor_heap));
-		Offset(rtv_handle, 1, imgui_descriptor_heap.increment_size);
+		Offset(rtv_handle, 1, imgui_descriptor_heap->increment_size);
 
 		std::array<Format, 1> formats = { Format::R8G8B8A8_UNORM };
-		CreateSRVFromRTV(imgui_game_render_target, device, rtv_handle, formats.size(), formats.data());
+		CreateSRVFromRTV(imgui_game_render_target, *device, rtv_handle, formats.size(), formats.data());
 	}
 
 	void RenderSystem::Init() {
@@ -367,7 +360,7 @@ namespace rlr {
 		rlr::SetVertexShader(deferred_ps, &deferred_vertex_shader);
 		rlr::SetFragmentShader(deferred_ps, &deferred_pixel_shader);
 		rlr::SetRootSignature(deferred_ps, &root_signature_0);
-		rlr::Finalize(deferred_ps, device, render_window, deferred_pso_info);
+		rlr::Finalize(deferred_ps, *device, render_window, deferred_pso_info);
 
 		/*# BLURRY BLURRY #*/
 		Load(blur_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/blur_vertex.hlsl");
@@ -381,7 +374,7 @@ namespace rlr {
 		rlr::SetVertexShader(blur_ps, &blur_vertex_shader);
 		rlr::SetFragmentShader(blur_ps, &blur_pixel_shader);
 		rlr::SetRootSignature(blur_ps, &root_signature_2);
-		rlr::Finalize(blur_ps, device, render_window, blur_pso_info);
+		rlr::Finalize(blur_ps, *device, render_window, blur_pso_info);
 
 		/*# FINAL COMPOSITION #*/
 		Load(composition_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/compo_vertex.hlsl");
@@ -395,7 +388,7 @@ namespace rlr {
 		rlr::SetVertexShader(final_composition_ps, &composition_vertex_shader);
 		rlr::SetFragmentShader(final_composition_ps, &composition_pixel_shader);
 		rlr::SetRootSignature(final_composition_ps, &root_signature_2);
-		rlr::Finalize(final_composition_ps, device, render_window, composition_pso_info);
+		rlr::Finalize(final_composition_ps, *device, render_window, composition_pso_info);
 
 		/*# SCREEN SPACE AMBIENT OCCLUSION #*/
 
@@ -410,7 +403,7 @@ namespace rlr {
 		rlr::SetVertexShader(ssao_ps, &ssao_vertex_shader);
 		rlr::SetFragmentShader(ssao_ps, &ssao_pixel_shader);
 		rlr::SetRootSignature(ssao_ps, &root_signature_0);
-		rlr::Finalize(ssao_ps, device, render_window, ssao_pso_info);
+		rlr::Finalize(ssao_ps, *device, render_window, ssao_pso_info);
 
 		Load(blur_ssao_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/ssao_vertex.hlsl");
 		Load(blur_ssao_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/ssao_blur_pixel.hlsl");
@@ -418,7 +411,7 @@ namespace rlr {
 		rlr::SetVertexShader(blur_ssao_ps, &blur_ssao_vertex_shader);
 		rlr::SetFragmentShader(blur_ssao_ps, &blur_ssao_pixel_shader);
 		rlr::SetRootSignature(blur_ssao_ps, &root_signature_1);
-		rlr::Finalize(blur_ssao_ps, device, render_window, ssao_pso_info);
+		rlr::Finalize(blur_ssao_ps, *device, render_window, ssao_pso_info);
 
 		Begin(*main_cmd_list, render_window.frame_idx);
 
@@ -432,16 +425,16 @@ namespace rlr {
 			{ { -1.f, -1.f, 0.f },{ 0, 0, 0 },{ 0, 1 } },
 		};
 
-		Create(quad_vb, device, vertices, 6 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		Create(quad_vb, *device, vertices, 6 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		StageBuffer(quad_vb, *main_cmd_list);
 
 		rlr::Load(ssao_texture, "resources/engine/textures/ssao.png");
 		rlr::Load(sky_texture, "resources/tests/sky.dds");
 
-		StageTexture(ssao_texture, device, *main_cmd_list); 
-		StageTexture(sky_texture, device, *main_cmd_list, true);
+		StageTexture(ssao_texture, *device, *main_cmd_list); 
+		StageTexture(sky_texture, *device, *main_cmd_list, true);
 
-		staging_func(&device, main_cmd_list);
+		staging_func(device, main_cmd_list);
 
 		// transitions
 		Transition(*main_cmd_list, game_render_target, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
@@ -460,8 +453,8 @@ namespace rlr {
 		//}
 
 		std::vector<CommandList> cmd_lists = { *main_cmd_list, *imgui_cmd_list };
-		Execute(*main_cmd_queue, cmd_lists, fence[render_window.frame_idx]);
-		Signal(fence[render_window.frame_idx], *main_cmd_queue);
+		Execute(main_cmd_queue, cmd_lists, fences[render_window.frame_idx]);
+		Signal(fences[render_window.frame_idx], main_cmd_queue);
 
 		SetupDescriptorHeaps();
 
@@ -474,17 +467,17 @@ namespace rlr {
 		DescriptorHeapCreateInfo heap_0_create_info;
 		heap_0_create_info.num_descriptors = 7;
 		heap_0_create_info.type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		Create(srv_descriptor_heap_0, device, heap_0_create_info);
+		Create(&srv_descriptor_heap_0, device, heap_0_create_info);
 
 		DescriptorHeapCreateInfo heap_1_create_info;
 		heap_1_create_info.num_descriptors = 1;
 		heap_1_create_info.type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		Create(srv_descriptor_heap_1, device, heap_1_create_info);
+		Create(&srv_descriptor_heap_1, device, heap_1_create_info);
 
 		DescriptorHeapCreateInfo heap_2_create_info;
 		heap_2_create_info.num_descriptors = 3;
 		heap_2_create_info.type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
-		Create(srv_descriptor_heap_2, device, heap_2_create_info);
+		Create(&srv_descriptor_heap_2, device, heap_2_create_info);
 	}
 
 	void RenderSystem::RenderImGui() {
@@ -494,7 +487,7 @@ namespace rlr {
 		Transition(*imgui_cmd_list, render_window, render_window.frame_idx, ResourceState::PRESENT, ResourceState::RENDER_TARGET);
 		Bind(*imgui_cmd_list, render_window, render_window.frame_idx);
 
-		std::vector<DescriptorHeap> heaps = { imgui_descriptor_heap };
+		std::vector<DescriptorHeap*> heaps = { imgui_descriptor_heap };
 		Bind(*imgui_cmd_list, heaps);
 
 		ImGui_ImplDX12_NewFrame();
@@ -514,7 +507,7 @@ namespace rlr {
 	}
 
 	void RenderSystem::Render(SceneGraph* graph) {
-		WaitFor(fence[render_window.frame_idx], device);
+		WaitFor(fences[render_window.frame_idx]);
 		//WaitForSingleObjectEx(swapchainEvent, INFINITE, FALSE);
 
 		shadow_cam->SetPos(cam->GetPos() + shadow_pos_offset);
@@ -636,7 +629,7 @@ namespace rlr {
 			Bind(*deferred_cmd_list, blur_ps);
 			Bind(*deferred_cmd_list, viewport);
 
-			std::vector<DescriptorHeap> heaps = { srv_descriptor_heap_2 };
+			std::vector<DescriptorHeap*> heaps = { srv_descriptor_heap_2 };
 			Bind(*deferred_cmd_list, heaps);
 
 			DescHeapGPUHandle handle = GetGPUHandle(srv_descriptor_heap_2);
@@ -650,8 +643,8 @@ namespace rlr {
 
 				if (i == 0) {
 					DescHeapCPUHandle at_main_srv_handle = GetCPUHandle(srv_descriptor_heap_2);
-					Offset(at_main_srv_handle, 2, srv_descriptor_heap_2.increment_size);
-					CreateSRVFromRTV(blur_render_target, device, at_main_srv_handle, blur_render_target.create_info.num_rtv_formats, blur_render_target.create_info.rtv_formats);
+					Offset(at_main_srv_handle, 2, srv_descriptor_heap_2->increment_size);
+					CreateSRVFromRTV(blur_render_target, *device, at_main_srv_handle, blur_render_target.create_info.num_rtv_formats, blur_render_target.create_info.rtv_formats);
 				}
 			}
 
@@ -683,10 +676,10 @@ namespace rlr {
 		//f2.get();
 		//f1.get(); // shadow
 
-		Execute(*main_cmd_queue, cmd_lists, fence[render_window.frame_idx]);
-		Signal(fence[render_window.frame_idx], *main_cmd_queue);
+		Execute(main_cmd_queue, cmd_lists, fences[render_window.frame_idx]);
+		Signal(fences[render_window.frame_idx], main_cmd_queue);
 
-		Present(render_window, *main_cmd_queue, device);
+		Present(render_window, *main_cmd_queue, *device);
 
 		PROFILER_END()
 		PROFILER_END_ROOT()
@@ -800,11 +793,11 @@ namespace rlr {
 	*	This function requires a render target to be bound BEFORE being called.
 	*	The render target is NOT being cleared.
 	*/
-	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap& srv_heap) {
+	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap) {
 		Bind(cmd_list, pipeline);
 		Bind(cmd_list, viewport);
 
-		std::vector<DescriptorHeap> heaps = { srv_heap };
+		std::vector<DescriptorHeap*> heaps = { srv_heap };
 		Bind(cmd_list, heaps);
 
 		DescHeapGPUHandle handle = GetGPUHandle(srv_heap);
@@ -843,7 +836,7 @@ namespace rlr {
 		if (to_render == 0) to_render = 3;
 		to_render = 1;
 		DescHeapGPUHandle rtv_handle = GetGPUHandle(imgui_descriptor_heap);
-		Offset(rtv_handle, to_render, imgui_descriptor_heap.increment_size);
+		Offset(rtv_handle, to_render, imgui_descriptor_heap->increment_size);
 
 		return (ImTextureID)rtv_handle.native.ptr;
 	}
@@ -858,8 +851,8 @@ namespace rlr {
 		create_info.rtv_formats[1] = Format::R16G16B16A16_FLOAT; // normal
 		create_info.rtv_formats[2] = Format::R16G16B16A16_FLOAT; // position
 
-		Finalize(*ps->root_signature, device);
-		Finalize(*ps, device, render_window, create_info);
+		Finalize(*ps->root_signature, *device);
+		Finalize(*ps, *device, render_window, create_info);
 	}
 
 	void RenderSystem::UnregisterPipeline(std::string id) {
