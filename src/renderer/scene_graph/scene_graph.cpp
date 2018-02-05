@@ -37,10 +37,10 @@ std::string Node::GetName() const {
 	return m_name;
 }
 
-SceneGraph::SceneGraph(rlr::RenderSystem& render_system) 
+SceneGraph::SceneGraph(rlr::RenderSystem& render_system, int width, int height) 
 	: m_render_system(render_system),
 	m_diffuse_matrix_transforms(false),
-	root(CreateNode<RootNode>("Root")) {
+	root(CreateNode<RootNode>("Root", width, height)) {
 }
 
 SceneGraph::~SceneGraph() {
@@ -64,6 +64,6 @@ void SceneGraph::InitAll() {
 	}
 }
 
-void SceneGraph::Optimize() {
-
+rlr::Viewport SceneGraph::GetViewport() const {
+	return std::static_pointer_cast<RootNode>(root)->viewport;
 }

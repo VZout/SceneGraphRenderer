@@ -45,12 +45,13 @@ void DrawableNode::Init() {
 void DrawableNode::Render(rlr::CommandList& cmd_list, rlr::Camera const& camera, bool shadows) {
 	if (m_instanced) return;
 
-	Bind(cmd_list, m_graph.m_current_viewport); // TODO: This can be optimized when a render pass starts.
+	Bind(cmd_list, m_graph.GetViewport()); // TODO: This can be optimized when a render pass starts.
 
 	if (shadows && !m_cast_shadows)
 		return;
 
 	if (shadows) {
+		Bind(cmd_list, m_render_system.shadow_viewport);
 		Bind(cmd_list, *m_render_system.GetPipeline(pipeline_id + "_shadow"));
 		Bind(cmd_list, m_render_system.shadow_projection_view_const_buffer, 2, m_render_system.render_window.frame_idx);
 		Bind(cmd_list, *shadow_const_buffer, 0, m_render_system.render_window.frame_idx);

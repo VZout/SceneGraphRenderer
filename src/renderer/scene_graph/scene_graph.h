@@ -5,6 +5,9 @@
 #include <array>
 #include <string>
 
+#include "../dx12/dx12_viewport.h"
+#include "../interface.h"
+
 namespace rlr {
 	class RenderSystem;
 	class CommandList;
@@ -16,7 +19,6 @@ namespace rlr {
 
 class SceneGraph;
 
-#include "../dx12/dx12_viewport.h"
 
 class Node : public std::enable_shared_from_this<Node> {
 	friend class SceneGraph;
@@ -49,12 +51,14 @@ protected:
 };
 
 class RootNode : public Node {
+	friend class SceneGraph;
 public:
-	RootNode(SceneGraph& graph, rlr::RenderSystem& render_system, std::string const& name) : Node(graph, render_system, name) {
-
+	RootNode(SceneGraph& graph, rlr::RenderSystem& render_system, std::string const& name, int width, int height) : Node(graph, render_system, name) {
+		rlr::Create(this->viewport, width, height);
 	}
-	virtual ~RootNode() {
 
+	virtual ~RootNode() {
+		rlr::Destroy(this->viewport);
 	}
 
 	virtual void Init() final {
@@ -64,17 +68,19 @@ public:
 	virtual void Render(rlr::CommandList& cmd_list, rlr::Camera const& camera, bool shadows) final {
 
 	}
+
+private:
+	rlr::Viewport viewport;
 };
 
 class SceneGraph {
 public:
-	SceneGraph(rlr::RenderSystem& render_system);
+	SceneGraph(rlr::RenderSystem& render_system, int width, int height);
 	~SceneGraph();
 	
 	std::shared_ptr<Node> root;
 
 	void InitAll();
-	void Optimize();
 
 	template<typename T, class ... Types>
 	[[nodiscard]] std::shared_ptr<T> CreateNode(std::string const& name, Types ... args) {
@@ -88,18 +94,10 @@ public:
 		return node;
 	}
 
-	//std::vector<std::shared_ptr<DrawableNode>> m_shadow_pass_objects;
-	rlr::Viewport m_current_viewport;
+	rlr::Viewport GetViewport() const;
 
 private:
 	rlr::RenderSystem& m_render_system;
 
 	bool m_diffuse_matrix_transforms;
 };
-
-/*
-template<typename T, class ... Types>
-std::shared_ptr<Node> [[nodiscard]] CreateNode(Types ... args) {
-	return std::make_shared<T>(args...);
-}
-*/

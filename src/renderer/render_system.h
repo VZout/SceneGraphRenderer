@@ -147,7 +147,6 @@ public:
 	RenderTarget composition_render_target;
 
 	std::array<Fence*, 3> fences;
-	Viewport viewport;
 	Viewport shadow_viewport;
 	Camera* cam;
 
@@ -165,9 +164,8 @@ public:
 	unsigned int frames = 0;
 	std::chrono::time_point<std::chrono::high_resolution_clock> prev;
 
-	void Populate_Drawables(CommandList& cmd_list, std::vector<Drawable*>& drawables, Camera const& camera, int begin, int end, bool shadows = false);
 	void Populate_InstancedDrawables(CommandList& cmd_list, Camera const& camera);
-	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap);
+	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap, Viewport viewport);
 
 	void SetupSwapchain(int width, int height);
 	void SetupDescriptorHeaps();

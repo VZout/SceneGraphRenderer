@@ -3,14 +3,12 @@
 
 #include <renderer\imgui\imgui.h>
 #include <renderer/animation_manager.h>
-#include <renderer/scene_graph/viewport_node.h>
 #include <renderer/enums.h>
 #include <d3d12.h>
 
 rlr::Window* window = nullptr;
 SceneGraph* graph = nullptr;
 rlr::RenderSystem* render_system = nullptr;
-std::shared_ptr<rlr::ViewportNode> viewport_node;
 std::shared_ptr<rlr::DrawableNode> dr0;
 std::shared_ptr<rlr::DrawableNode> dr1;
 std::shared_ptr<rlr::DrawableNode> back_wall;
@@ -145,14 +143,13 @@ int main() {
 	render_system = new rlr::RenderSystem(*window);
 	render_system->Setup();
 
-	graph = new SceneGraph(*render_system);
+	graph = new SceneGraph(*render_system, 1280, 720);
 
-	viewport_node = graph->CreateChildNode<rlr::ViewportNode>(graph->root, "Default Viewport", 1280, 720);
-	dr0 = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Cow", "basic");
-	dr1 = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Dancing Human", "anim");
-	back_wall = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Back Wall", "basic");
-	left_wall = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Left Wall", "basic");
-	right_wall = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Right Wall", "basic");
+	dr0 = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Cow", "basic");
+	dr1 = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Dancing Human", "anim");
+	back_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Back Wall", "basic");
+	left_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Left Wall", "basic");
+	right_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Right Wall", "basic");
 
 	rlr::Load(*(spot_albedo			   = new rlr::Texture()), "resources/tests/spot.png");
 	rlr::Load(*(spot_spec			   = new rlr::Texture()), "resources/tests/spot_specular.png");
@@ -193,8 +190,10 @@ int main() {
 	left_wall->SetTextures(metal_textures);
 	dr1->SetTextures(wall_textures);
 
+	dr0->m_cast_shadows = true;
+
 	for (auto i = 0; i < num_floors; i++) {
-		auto floor = graph->CreateChildNode<rlr::DrawableNode>(viewport_node, "Instanced floor piece", "basic", false, true, 0);
+		auto floor = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Instanced floor piece", "basic", false, true, 0);
 		floor->SetInstancedPos(fm::vec3(i*24, 0, 0));
 		floor->SetTextures(floor_textures);
 		floor->model = floor_model;

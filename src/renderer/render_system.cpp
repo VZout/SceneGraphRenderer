@@ -39,7 +39,6 @@ namespace rlr {
 		ImGui::ShutdownDock();
 
 		ClearAllPipelines();
-		Destroy(viewport);
 		Destroy(*imgui_cmd_list);
 		Destroy(*main_cmd_list);
 		Destroy(render_window);
@@ -244,8 +243,6 @@ namespace rlr {
 
 			SetupDescriptorHeaps();
 
-			Create(viewport, width, height);
-
 			CreateSRVFromSwapchain();
 
 			Begin(*imgui_cmd_list, render_window.frame_idx);
@@ -292,7 +289,6 @@ namespace rlr {
 		Allocate(&ssao_cmd_list, *device, 3);
 		ssao_cmd_list->native->SetName(L"ssao cmd");
 
-		Create(viewport, width, height);
 		Create(shadow_viewport, SHADOW_SIZE, SHADOW_SIZE);
 
 		for (auto i = 0; i < fences.size(); i++) {
@@ -577,15 +573,23 @@ namespace rlr {
 		/* # NORMAL RENDERING # */
 
 		/* # SHADOW DEPTH RENDERING # */
-		//auto f1 = thread_pool->enqueue([&]() {
-		/*	Begin(*shadow_cmd_list, render_window.frame_idx);
+		///auto f1 = thread_pool->enqueue([&]() {
+			Begin(*shadow_cmd_list, render_window.frame_idx);
 			SBind(*shadow_cmd_list, shadow_render_target, render_window.frame_idx);
 			PROFILER_BEGIN_GPU("Shadow rendering", shadow_cmd_list->native);
 
-			Populate_Drawables(*shadow_cmd_list, drawables, *shadow_cam, 0, drawables.size(), true);
+			recursive_func_t recursive_shadow_draw = [&](std::shared_ptr<Node> node) {
+				for (auto child : node->GetChildren()) {
+					child->Render(*shadow_cmd_list, *cam, true);
+					recursive_shadow_draw(child);
+				}
+			};
+
+			recursive_shadow_draw(graph->root);
+			//Populate_Drawables(*shadow_cmd_list, drawables, *shadow_cam, 0, drawables.size(), true);
 
 			PROFILER_END_GPU(shadow_cmd_list->native)
-			End(*shadow_cmd_list);*/
+			End(*shadow_cmd_list);
 		//});
 		/* # SHADOW DEPTH RENDERING # */
 
@@ -596,13 +600,13 @@ namespace rlr {
 		// Standard SSAO
 		PROFILER_BEGIN_GPU("SSAO - Standard", ssao_cmd_list->native)
 		Bind(*ssao_cmd_list, ssao_render_target, render_window.frame_idx, false);
-		Populate_FullscreenQuad(*ssao_cmd_list, ssao_ps, ssao_const_buffer, srv_descriptor_heap_0);
+		Populate_FullscreenQuad(*ssao_cmd_list, ssao_ps, ssao_const_buffer, srv_descriptor_heap_0, graph->GetViewport());
 		PROFILER_END_GPU(ssao_cmd_list->native);
 
 		// Blur
 		PROFILER_BEGIN_GPU("SSAO - Blurring", ssao_cmd_list->native)
 		Bind(*ssao_cmd_list, blur_ssao_render_target, render_window.frame_idx, false);
-		Populate_FullscreenQuad(*ssao_cmd_list, blur_ssao_ps, ssao_const_buffer, srv_descriptor_heap_1);
+		Populate_FullscreenQuad(*ssao_cmd_list, blur_ssao_ps, ssao_const_buffer, srv_descriptor_heap_1, graph->GetViewport());
 		PROFILER_END_GPU(ssao_cmd_list->native);
 
 		PROFILER_END_GPU(ssao_cmd_list->native);
@@ -614,7 +618,7 @@ namespace rlr {
 		PROFILER_BEGIN_GPU("Deferred rendering", deferred_cmd_list->native)
 		Bind(*deferred_cmd_list, deferred_render_target, render_window.frame_idx, false, false, true);
 
-		Populate_FullscreenQuad(*deferred_cmd_list, deferred_ps, deferred_const_buffer, srv_descriptor_heap_0);
+		Populate_FullscreenQuad(*deferred_cmd_list, deferred_ps, deferred_const_buffer, srv_descriptor_heap_0, graph->GetViewport());
 
 		PROFILER_END_GPU(deferred_cmd_list->native);
 		/* # DEFERRED # */
@@ -627,7 +631,7 @@ namespace rlr {
 			PROFILER_BEGIN_GPU("Blurring", deferred_cmd_list->native)
 
 			Bind(*deferred_cmd_list, blur_ps);
-			Bind(*deferred_cmd_list, viewport);
+			Bind(*deferred_cmd_list, graph->GetViewport());
 
 			std::vector<DescriptorHeap*> heaps = { srv_descriptor_heap_2 };
 			Bind(*deferred_cmd_list, heaps);
@@ -658,7 +662,7 @@ namespace rlr {
 			Bind(*deferred_cmd_list, composition_render_target, render_window.frame_idx, false);
 			PROFILER_BEGIN_GPU("Final Composition", deferred_cmd_list->native)
 
-			Populate_FullscreenQuad(*deferred_cmd_list, final_composition_ps, compo_const_buffer, srv_descriptor_heap_2);
+			Populate_FullscreenQuad(*deferred_cmd_list, final_composition_ps, compo_const_buffer, srv_descriptor_heap_2, graph->GetViewport());
 
 			if (!render_engine) Transition(*deferred_cmd_list, composition_render_target, render_window.frame_idx, ResourceState::RENDER_TARGET, ResourceState::PRESENT);
 			PROFILER_END_GPU(deferred_cmd_list->native);
@@ -670,7 +674,7 @@ namespace rlr {
 
 		std::vector<CommandList> cmd_lists = { *shadow_cmd_list, *main_cmd_list, *ssao_cmd_list, *deferred_cmd_list };
 		if (render_engine) {
-			cmd_lists = { *imgui_cmd_list, *shadow_cmd_list, *ssao_cmd_list, *deferred_cmd_list,  *main_cmd_list };
+			cmd_lists = { *imgui_cmd_list, *ssao_cmd_list, *shadow_cmd_list, *deferred_cmd_list,  *main_cmd_list };
 		}
 
 		//f2.get();
@@ -689,65 +693,6 @@ namespace rlr {
 
 	std::string readablevec(fm::vec3 v) {
 		return std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z);
-	}
-
-	/*! \brief Populates a command list with the actuall drawables being rendererd.
-	*   This data can be used for either the gbuffers and/or shadow mapping.
-	*   This function renders NON instanced drawables to the a render target.
-	*	This function requires a render target to be bound BEFORE being called.
-	*   The render target is being cleared.
-	*/
-	void RenderSystem::Populate_Drawables(CommandList& cmd_list, std::vector<Drawable*>& drawables, Camera const& camera, int begin, int end, bool shadows) {
-		PROFILER_BEGIN_GPU("Regular object rendering", cmd_list.native);
-
-		if (shadows) {
-			Bind(cmd_list, shadow_viewport);
-		}
-		else {
-			Bind(cmd_list, viewport);
-		}
-
-		for (auto d_id = begin; d_id < end; d_id++) {
-			auto* drawable = drawables[d_id];
-
-			if (shadows && !drawable->cast_shadows)
-				continue;
-
-			if (shadows) {
-				BIND_PIPELINE(cmd_list, drawable->pipeline_id + "_shadow")
-				Bind(cmd_list, shadow_projection_view_const_buffer, 2, render_window.frame_idx);
-			}
-			else {
-				BIND_PIPELINE(cmd_list, drawable->pipeline_id)
-				Bind(cmd_list, projection_view_const_buffer, 2, render_window.frame_idx);
-			}
-
-
-			std::vector<ID3D12DescriptorHeap*> heaps = { drawable->ta.texture_heap };
-			cmd_list.native->SetDescriptorHeaps(heaps.size(), heaps.data());
-
-			if (!shadows) {
-				Bind(cmd_list, drawable->const_buffer, 0, render_window.frame_idx);
-				Bind(cmd_list, projection_view_const_buffer, 2, render_window.frame_idx);
-			}
-
-			for (size_t i = 0; i < drawable->model.meshes.size(); i++) {
-				BindVertexBuffer(cmd_list, drawable->model.meshes[i].vb);
-
-				Bind(cmd_list, drawable->ta, 1);
-				BindIndexBuffer(cmd_list, drawable->model.meshes[i].ib);
-
-				if (shadows) {
-					Bind(cmd_list, drawable->shadow_const_buffer, 0, render_window.frame_idx);
-				}
-				else {
-					Bind(cmd_list, drawable->const_buffer, 0, render_window.frame_idx);
-				}
-
-				DrawIndexed(cmd_list, drawable->model.meshes[i].indices.size(), 1);
-			}
-		}
-		PROFILER_END_GPU(cmd_list.native);
 	}
 
 	/*! \brief Populates a command list with the actuall drawables being rendererd.
@@ -793,7 +738,7 @@ namespace rlr {
 	*	This function requires a render target to be bound BEFORE being called.
 	*	The render target is NOT being cleared.
 	*/
-	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap) {
+	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap, Viewport viewport) {
 		Bind(cmd_list, pipeline);
 		Bind(cmd_list, viewport);
 

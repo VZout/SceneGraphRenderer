@@ -165,11 +165,8 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 	float4 modelpos = mul(float4(frag_pos.xyz, 1.0), iv);
 	float4x4 pv = mul(shadow_proj, shadow_view);
 	float4 shadowClip = mul(pv, modelpos);
-
-	//float4 modelpos = mul(view, float4(frag_pos.xyz, 1.0));
-	//float4x4 pv = mul(shadow_proj, shadow_view);
-	//float4 shadowClip = mul(pv, modelpos);
 	shadowClip.y *= -1;
+
 	float shadowFactor = filterPCF(shadowClip, float2(0, 0));
 	lighting *= shadowFactor;
 
@@ -179,7 +176,7 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 		lighting += value;
 	}
 
-	// overdose
+	// overdose (bloom)
 	float brightness = dot(lighting, float3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		psout.overdose = float4(lighting, 1.0);
