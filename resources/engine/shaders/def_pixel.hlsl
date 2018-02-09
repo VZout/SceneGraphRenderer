@@ -56,7 +56,7 @@ float3 CalcPointLight(Light light, float3 albedo, float specular_in, float3 norm
 	return result;
 }
 
-float textureProj(float4 P, float layer, float2 offset)
+float oldtextureProj(float4 P, float layer, float2 offset)
 {
 	float shadow = 1.0;
 	float4 shadowCoord = P / P.w;
@@ -68,6 +68,23 @@ float textureProj(float4 P, float layer, float2 offset)
 		if (shadowCoord.w > 0.0 && dist < shadowCoord.z) 
 		{
 			shadow = 0.25;
+		}
+	}
+	return shadow;
+}
+
+float textureProj(float4 P, float2 off)
+{
+	float shadow = 1.0;
+	float4 shadowCoord = P / P.w;
+	shadowCoord.xy = shadowCoord.xy * 0.5 + 0.5;
+
+	if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) 
+	{
+		float dist = t3.Sample(s0, shadowCoord.xy + off).r;
+		if (shadowCoord.w > 0.0 && dist < shadowCoord.z) 
+		{
+			shadow = 0.0;
 		}
 	}
 	return shadow;
@@ -88,7 +105,7 @@ float filterPCF(float4 sc, float layer)
 	{
 		for (int y = -range; y <= range; y++)
 		{
-			shadowFactor += textureProj(sc, layer, float2(dx*x, dy*y));
+			shadowFactor += textureProj(sc, float2(dx*x, dy*y));
 			count++;
 		}
 	
@@ -168,6 +185,7 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 	shadowClip.y *= -1;
 
 	float shadowFactor = filterPCF(shadowClip, float2(0, 0));
+
 	lighting *= shadowFactor;
 
 	for(int i = 0; i < num_lights; i++)
@@ -182,6 +200,7 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 		psout.overdose = float4(lighting, 1.0);
 	else
 		psout.overdose = float4(0.0, 0.0, 0.0, 1.0);
+
 
 	// HDR
 	//psout.overdose = float4(lighting, 1);

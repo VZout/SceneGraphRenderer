@@ -82,6 +82,8 @@ void Destroy(RenderWindow& render_window);
 
 // CommandList
 void Allocate(CommandList** cmd_list, Device& device, unsigned int num = 1);
+void SetName(CommandList* cmd_list, std::string const& name);
+void SetName(CommandList* cmd_list, std::wstring const& name);
 void Begin(CommandList& cmd_list, unsigned int frame_idx);
 void End(CommandList& cmd_list);
 void Bind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx, bool clear = true, bool deferred = false, bool temp_compo = false);

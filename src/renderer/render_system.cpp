@@ -213,9 +213,9 @@ namespace rlr {
 	void RenderSystem::Setup() {
 		window.BindOnResize([&](int width, int height) {
 			// Make sure all command queues are finished.
-			for (auto i = 0; i < 3; i++) {
-				WaitFor(fences[i]);
-				Signal(fences[i], main_cmd_queue); // If I don't signal them they will be stuck when calling waitfor at the beginning of the frame.
+			for (auto& fence : fences) {
+				WaitFor(fence);
+				Signal(fence, main_cmd_queue); // If I don't signal them they will be stuck when calling waitfor at the beginning of the frame.
 			}
 
 			cam->SetAspectRatio((float)width / (float)height);
@@ -275,24 +275,24 @@ namespace rlr {
 		SetupSwapchain(width, height);
 
 		Allocate(&main_cmd_list, *device, 3);
-		main_cmd_list->native->SetName(L"Maincmd");
+		SetName(main_cmd_list, L"Main Command List");
 
 		Allocate(&imgui_cmd_list, *device, 3);
-		imgui_cmd_list->native->SetName(L"imgui");
+		SetName(imgui_cmd_list, L"ImGui cmd list");
 
 		Allocate(&shadow_cmd_list, *device, 3);
-		shadow_cmd_list->native->SetName(L"shadow cmd");
+		SetName(shadow_cmd_list, L"shadow cmd list");
 
 		Allocate(&deferred_cmd_list, *device, 3);
-		deferred_cmd_list->native->SetName(L"deferred cmd");
+		SetName(deferred_cmd_list, L"deferred cmd list");
 
 		Allocate(&ssao_cmd_list, *device, 3);
-		ssao_cmd_list->native->SetName(L"ssao cmd");
+		SetName(ssao_cmd_list, L"ssao cmd list");
 
 		Create(shadow_viewport, SHADOW_SIZE, SHADOW_SIZE);
 
-		for (auto i = 0; i < fences.size(); i++) {
-			Create(&fences[i], device);
+		for (auto& fence : fences) {
+			Create(&fence, device);
 		}
 
 		Create(deferred_const_buffer, *device, sizeof(CBSceneStruct));
@@ -333,7 +333,7 @@ namespace rlr {
 		shadow_cam = new Camera(1.f, true);
 		shadow_cam->SetPos(fm::vec(0, 2, -3));
 		shadow_cam->SetEuler(fm::vec(-40, 0, 0));
-		shadow_cam->SetOrthographic();
+		shadow_cam->SetOrthographic(10.0f, 10.0f);
 		shadow_cam->Update();
 
 		int width, height;
@@ -538,9 +538,10 @@ namespace rlr {
 #ifdef REDUCE_PIPELINE_STATE_CHANGES
 		last_pipeline_state = nullptr;
 #endif
+		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 
 		/* # NORMAL RENDERING # */
-		//auto f2 = thread_pool->enqueue([&]() {
+		auto f2 = thread_pool->enqueue([&]() {
 			Begin(*main_cmd_list, render_window.frame_idx);
 			PROFILER_BEGIN_GPU("Custom", main_cmd_list->native);
 			PROFILER_BEGIN_GPU("Game rendering", main_cmd_list->native);
@@ -553,8 +554,6 @@ namespace rlr {
 				}
 				static_inst_needs_staging = false;
 			}
-
-			using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 
 			recursive_func_t recursive_draw = [&](std::shared_ptr<Node> node) {
 				for (auto child : node->GetChildren()) {
@@ -569,11 +568,11 @@ namespace rlr {
 
 			PROFILER_END_GPU(main_cmd_list->native)
 			End(*main_cmd_list);
-		//});
+		});
 		/* # NORMAL RENDERING # */
 
 		/* # SHADOW DEPTH RENDERING # */
-		///auto f1 = thread_pool->enqueue([&]() {
+		auto f1 = thread_pool->enqueue([&]() {
 			Begin(*shadow_cmd_list, render_window.frame_idx);
 			SBind(*shadow_cmd_list, shadow_render_target, render_window.frame_idx);
 			PROFILER_BEGIN_GPU("Shadow rendering", shadow_cmd_list->native);
@@ -590,7 +589,7 @@ namespace rlr {
 
 			PROFILER_END_GPU(shadow_cmd_list->native)
 			End(*shadow_cmd_list);
-		//});
+		});
 		/* # SHADOW DEPTH RENDERING # */
 
 		/* # SCREEN SPACE AMBIENT OCCLUSION # */
@@ -677,8 +676,8 @@ namespace rlr {
 			cmd_lists = { *imgui_cmd_list, *ssao_cmd_list, *shadow_cmd_list, *deferred_cmd_list,  *main_cmd_list };
 		}
 
-		//f2.get();
-		//f1.get(); // shadow
+		f2.get();
+		f1.get(); // shadow
 
 		Execute(main_cmd_queue, cmd_lists, fences[render_window.frame_idx]);
 		Signal(fences[render_window.frame_idx], main_cmd_queue);

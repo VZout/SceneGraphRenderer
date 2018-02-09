@@ -8,7 +8,8 @@
 #include "../dx12/dx12_viewport.h"
 #include "../interface.h"
 
-namespace rlr {
+namespace rlr 
+{
 	class RenderSystem;
 	class CommandList;
 	class Camera;
@@ -20,7 +21,8 @@ namespace rlr {
 class SceneGraph;
 
 
-class Node : public std::enable_shared_from_this<Node> {
+class Node : public std::enable_shared_from_this<Node>
+{
 	friend class SceneGraph;
 public:
 	Node(SceneGraph& graph, rlr::RenderSystem& render_system, std::string const& name);
@@ -50,30 +52,22 @@ protected:
 	bool m_initialized;
 };
 
-class RootNode : public Node {
+class RootNode : public Node
+{
 	friend class SceneGraph;
 public:
-	RootNode(SceneGraph& graph, rlr::RenderSystem& render_system, std::string const& name, int width, int height) : Node(graph, render_system, name) {
-		rlr::Create(this->viewport, width, height);
-	}
+	RootNode(SceneGraph& graph, rlr::RenderSystem& render_system, std::string const& name, int width, int height);
+	virtual ~RootNode();
 
-	virtual ~RootNode() {
-		rlr::Destroy(this->viewport);
-	}
-
-	virtual void Init() final {
-
-	}
-
-	virtual void Render(rlr::CommandList& cmd_list, rlr::Camera const& camera, bool shadows) final {
-
-	}
+	virtual void Init() final;
+	virtual void Render(rlr::CommandList& cmd_list, rlr::Camera const& camera, bool shadows) final;
 
 private:
 	rlr::Viewport viewport;
 };
 
-class SceneGraph {
+class SceneGraph
+{
 public:
 	SceneGraph(rlr::RenderSystem& render_system, int width, int height);
 	~SceneGraph();
@@ -83,18 +77,21 @@ public:
 	void InitAll();
 
 	template<typename T, class ... Types>
-	[[nodiscard]] std::shared_ptr<T> CreateNode(std::string const& name, Types ... args) {
+	[[nodiscard]] std::shared_ptr<T> CreateNode(std::string const& name, Types ... args)
+	{
 		return std::make_shared<T>(*this, m_render_system, name, args...);
 	}
 
 	template<typename T, class ... Types>
-	std::shared_ptr<T> CreateChildNode(std::shared_ptr<Node> parent, std::string const& name, Types ... args) {
+	std::shared_ptr<T> CreateChildNode(std::shared_ptr<Node> parent, std::string const& name, Types ... args)
+	{
 		auto node = std::make_shared<T>(*this, m_render_system, name, args...);
 		parent->AddChild(node);
 		return node;
 	}
 
 	rlr::Viewport GetViewport() const;
+	void ResizeViewport(int width, int height);
 
 private:
 	rlr::RenderSystem& m_render_system;

@@ -37,9 +37,9 @@ void Camera::SetPerspective() {
 	DirectX::XMStoreFloat4x4(&_projection, proj);
 }
 
-void Camera::SetOrthographic() {
-	//DirectX::XMMATRIX proj = DirectX::XMMatrixOrthographicRH(1280, 720, _frustum_near, _frustum_far);
-	//DirectX::XMStoreFloat4x4(&_projection, proj);
+void Camera::SetOrthographic(float width, float height) {
+	DirectX::XMMATRIX proj = DirectX::XMMatrixOrthographicRH(width, height, _frustum_near, _frustum_far);
+	DirectX::XMStoreFloat4x4(&_projection, proj);
 }
 
 void Camera::Update() {
@@ -52,7 +52,6 @@ void Camera::Update() {
 	_forward = new_forward.Normalized();
 	_right = _forward.Cross(_world_up).Normalized();
 	_up = _right.Cross(_forward).Normalized();
-
 
 	fm::vec3 at = _pos + _forward;
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtRH({ _pos.x, _pos.y, _pos.z }, { at.x, at.y, at.z }, { _up.x, _up.y, _up.z });

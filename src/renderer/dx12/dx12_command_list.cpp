@@ -6,6 +6,9 @@
 #include <vector>
 #include <iostream>
 #include <d3d12.h>
+#include <locale>
+#include <codecvt>
+#include <string>
 
 namespace rlr {
 
@@ -41,6 +44,23 @@ void Allocate(CommandList** cmd_list, Device& device, unsigned int num) {
 	new_cmd_list->native->Close(); // TODO: Can be optimized away.
 
 	(*cmd_list) = new_cmd_list;
+}
+
+void SetName(CommandList* cmd_list, std::string const& name)
+{
+#ifdef _DEBUG
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	std::wstring wname = converter.from_bytes(name);
+
+	cmd_list->native->SetName(wname.c_str());
+#endif
+}
+
+void SetName(CommandList* cmd_list, std::wstring const& name)
+{
+#ifdef _DEBUG
+	cmd_list->native->SetName(name.c_str());
+#endif
 }
 
 void Begin(CommandList& cmd_list, unsigned int frame_idx) {

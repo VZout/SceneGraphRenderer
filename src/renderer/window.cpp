@@ -58,22 +58,14 @@ void Window::Close() {
 	glfwSetWindowShouldClose(native, GLFW_TRUE);
 }
 
-std::unordered_map<GLFWwindow*, std::function<void(int, int)>> callbacks;
-void BindOnResize(Window& window, std::function<void(int width, int height)> callback) {
-	callbacks[window.native] = std::move(callback);
-
-	glfwSetWindowSizeCallback(window.native, [](GLFWwindow* window, int width, int height) {
-		callbacks[window](width, height);
-	});
-}
-
-void Window::BindOnResize(std::function<void(int, int)> callback) {
-	callbacks[native] = std::move(callback);
+std::vector<std::function<void(int, int)>> callbacks;
+void Window::BindOnResize(std::function<void(int width, int height)> callback) {
+	callbacks.push_back(std::move(callback));
 
 	glfwSetWindowSizeCallback(native, [](GLFWwindow* window, int width, int height) {
-		callbacks[window](width, height);
+		for (auto callback : callbacks)
+			callback(width, height);
 	});
 }
-
 
 } /* rlr */

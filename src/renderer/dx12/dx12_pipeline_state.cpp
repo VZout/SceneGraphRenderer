@@ -36,9 +36,11 @@ void Finalize(PipelineState& pipeline_state, Device& device, RenderWindow& rende
 	D3D12_RASTERIZER_DESC rasterize_desc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	rasterize_desc.FrontCounterClockwise = true;
 	depth_stencil_state.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-	if (pipeline_state.temp && create_info.dsv_format != Format::UNKNOWN) {
-		rasterize_desc.DepthBias = 1.25;
-		rasterize_desc.SlopeScaledDepthBias = 1.75f;
+	if (pipeline_state.temp) {
+		rasterize_desc.DepthBias = 1000; // TODO: Seems like a extreme depth bias. Shouldn't be nessessary for shadows.
+		rasterize_desc.DepthClipEnable = true;
+		rasterize_desc.DepthBiasClamp = 0;
+		rasterize_desc.SlopeScaledDepthBias = 1;
 		rasterize_desc.CullMode = D3D12_CULL_MODE_FRONT;
 		depth_stencil_state.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	}

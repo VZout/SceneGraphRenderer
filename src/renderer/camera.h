@@ -29,7 +29,7 @@ public:
     virtual ~Camera();
 
 	void SetPerspective();
-	void SetOrthographic();
+	void SetOrthographic(float width, float height);
     void Update();
 
 	void SetFoV(float fov);

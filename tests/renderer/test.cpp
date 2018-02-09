@@ -180,6 +180,10 @@ int main() {
 
 	graph->InitAll();
 
+	window->BindOnResize([](int width, int height) {
+		graph->ResizeViewport(width, height);
+	});
+
 	std::vector<rlr::Texture*> spot_textures = { spot_albedo, spot_spec, spot_albedo, spot_metal};
 	std::vector<rlr::Texture*> metal_textures = { metal_texture, metal_texture_specular, metal_texture_normal };
 	std::vector<rlr::Texture*> floor_textures = { floor_texture, floor_texture_specular, floor_texture_normal };
