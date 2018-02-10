@@ -44,16 +44,39 @@ namespace rlr {
 		Destroy(render_window);
 		Destroy(game_render_target);
 		Destroy(main_cmd_queue);
-		
+
+		Destroy(ssao_pixel_shader);
+		Destroy(ssao_vertex_shader);
+		Destroy(deferred_pixel_shader);
+		Destroy(deferred_vertex_shader);
+		Destroy(composition_pixel_shader);
+		Destroy(composition_vertex_shader);
+		Destroy(blur_pixel_shader);
+		Destroy(blur_vertex_shader);
+
 		delete device;
 		delete main_cmd_queue;
 
-//#ifdef _DEBUG
+#ifdef _DEBUG
 		Microsoft::WRL::ComPtr<IDXGIDebug> dxgiControler;
 		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiControler)))) {
 			dxgiControler->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL | DXGI_DEBUG_RLO_SUMMARY));
 		}
-//#endif	
+#endif	
+	}
+
+	void RenderSystem::BindPipelineOptimized(CommandList & cmd_list, std::string const& id)
+	{
+#ifdef REDUCE_PIPELINE_STATE_CHANGES
+	PipelineState* ps = GetPipeline(id); \
+	if (ps != last_pipeline_state) { \
+		Bind(cmd_list, *ps); \
+		last_pipeline_state = ps; \
+		num_pipeline_changes++; \
+	}
+#else
+	Bind(cmd_list, *GetPipeline(id));
+#endif
 	}
 
 	void RenderSystem::SetupSwapchain(int width, int height) {
@@ -173,8 +196,8 @@ namespace rlr {
 			rs_info.parameters[1].InitAsDescriptorTable(1, &desc_table_ranges, D3D12_SHADER_VISIBILITY_PIXEL);
 			rs_info.parameters[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
-			Create(root_signature_0, rs_info);
-			Finalize(root_signature_0, *device);
+			Create(&root_signature_0, rs_info);
+			Finalize(root_signature_0, device);
 		}
 
 		/* ROOT SIGNATURE 1*/
@@ -189,8 +212,8 @@ namespace rlr {
 			rs_info.parameters[1].InitAsDescriptorTable(1, &desc_table_ranges, D3D12_SHADER_VISIBILITY_PIXEL);
 			rs_info.parameters[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
-			Create(root_signature_1, rs_info);
-			Finalize(root_signature_1, *device);
+			Create(&root_signature_1, rs_info);
+			Finalize(root_signature_1, device);
 		}
 
 		/* ROOT SIGNATURE 2*/
@@ -205,8 +228,8 @@ namespace rlr {
 			rs_info.parameters[1].InitAsDescriptorTable(1, &desc_table_ranges, D3D12_SHADER_VISIBILITY_PIXEL);
 			rs_info.parameters[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
-			Create(root_signature_2, rs_info);
-			Finalize(root_signature_2, *device);
+			Create(&root_signature_2, rs_info);
+			Finalize(root_signature_2, device);
 		}
 	}
 
@@ -267,8 +290,7 @@ namespace rlr {
 
 		Create(&device);
 
-		main_cmd_queue = new CommandQueue();
-		Create(main_cmd_queue, device, CmdQueueType::CMD_QUEUE_DIRECT);
+		Create(&main_cmd_queue, device, CmdQueueType::CMD_QUEUE_DIRECT);
 
 		CreateMainDescriptorHeap();
 
@@ -344,8 +366,8 @@ namespace rlr {
 		/*# DEFERRED #*/
 		SetupRootSignatures();
 
-		Load(deferred_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/def_vertex.hlsl");
-		Load(deferred_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/def_pixel.hlsl");
+		Load(&deferred_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/def_vertex.hlsl");
+		Load(&deferred_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/def_pixel.hlsl");
 
 		rlr::PipelineStateCreateInfo deferred_pso_info;
 		deferred_pso_info.dsv_format = Format::UNKNOWN;
@@ -353,75 +375,72 @@ namespace rlr {
 		deferred_pso_info.rtv_formats[0] = Format::R16G16B16A16_UNORM;
 		deferred_pso_info.rtv_formats[1] = Format::R16G16B16A16_UNORM;
 
-		rlr::SetVertexShader(deferred_ps, &deferred_vertex_shader);
-		rlr::SetFragmentShader(deferred_ps, &deferred_pixel_shader);
-		rlr::SetRootSignature(deferred_ps, &root_signature_0);
+		rlr::SetVertexShader(deferred_ps, deferred_vertex_shader);
+		rlr::SetFragmentShader(deferred_ps, deferred_pixel_shader);
+		rlr::SetRootSignature(deferred_ps, root_signature_0);
 		rlr::Finalize(deferred_ps, *device, render_window, deferred_pso_info);
 
 		/*# BLURRY BLURRY #*/
-		Load(blur_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/blur_vertex.hlsl");
-		Load(blur_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/blur_pixel.hlsl");
+		Load(&blur_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/blur_vertex.hlsl");
+		Load(&blur_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/blur_pixel.hlsl");
 
 		rlr::PipelineStateCreateInfo blur_pso_info;
 		blur_pso_info.dsv_format = Format::UNKNOWN;
 		blur_pso_info.num_rtv_formats = 1;
 		blur_pso_info.rtv_formats[0] = Format::R16G16B16A16_UNORM;
 
-		rlr::SetVertexShader(blur_ps, &blur_vertex_shader);
-		rlr::SetFragmentShader(blur_ps, &blur_pixel_shader);
-		rlr::SetRootSignature(blur_ps, &root_signature_2);
+		rlr::SetVertexShader(blur_ps, blur_vertex_shader);
+		rlr::SetFragmentShader(blur_ps, blur_pixel_shader);
+		rlr::SetRootSignature(blur_ps, root_signature_2);
 		rlr::Finalize(blur_ps, *device, render_window, blur_pso_info);
 
 		/*# FINAL COMPOSITION #*/
-		Load(composition_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/compo_vertex.hlsl");
-		Load(composition_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/compo_pixel.hlsl");
+		Load(&composition_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/compo_vertex.hlsl");
+		Load(&composition_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/compo_pixel.hlsl");
 
 		rlr::PipelineStateCreateInfo composition_pso_info;
 		composition_pso_info.dsv_format = Format::UNKNOWN;
 		composition_pso_info.num_rtv_formats = 1;
 		composition_pso_info.rtv_formats[0] = Format::R8G8B8A8_UNORM;
 
-		rlr::SetVertexShader(final_composition_ps, &composition_vertex_shader);
-		rlr::SetFragmentShader(final_composition_ps, &composition_pixel_shader);
-		rlr::SetRootSignature(final_composition_ps, &root_signature_2);
+		rlr::SetVertexShader(final_composition_ps, composition_vertex_shader);
+		rlr::SetFragmentShader(final_composition_ps, composition_pixel_shader);
+		rlr::SetRootSignature(final_composition_ps, root_signature_2);
 		rlr::Finalize(final_composition_ps, *device, render_window, composition_pso_info);
 
 		/*# SCREEN SPACE AMBIENT OCCLUSION #*/
 
-		Load(ssao_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/ssao_vertex.hlsl");
-		Load(ssao_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/ssao_pixel.hlsl");
+		Load(&ssao_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/ssao_vertex.hlsl");
+		Load(&ssao_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/ssao_pixel.hlsl");
 
 		rlr::PipelineStateCreateInfo ssao_pso_info;
 		ssao_pso_info.dsv_format = Format::UNKNOWN;
 		ssao_pso_info.num_rtv_formats = 1;
 		ssao_pso_info.rtv_formats[0] = Format::R8_UNORM;
 
-		rlr::SetVertexShader(ssao_ps, &ssao_vertex_shader);
-		rlr::SetFragmentShader(ssao_ps, &ssao_pixel_shader);
-		rlr::SetRootSignature(ssao_ps, &root_signature_0);
+		rlr::SetVertexShader(ssao_ps, ssao_vertex_shader);
+		rlr::SetFragmentShader(ssao_ps, ssao_pixel_shader);
+		rlr::SetRootSignature(ssao_ps, root_signature_0);
 		rlr::Finalize(ssao_ps, *device, render_window, ssao_pso_info);
 
-		Load(blur_ssao_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/ssao_vertex.hlsl");
-		Load(blur_ssao_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/ssao_blur_pixel.hlsl");
+		Load(&blur_ssao_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/ssao_vertex.hlsl");
+		Load(&blur_ssao_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/ssao_blur_pixel.hlsl");
 
-		rlr::SetVertexShader(blur_ssao_ps, &blur_ssao_vertex_shader);
-		rlr::SetFragmentShader(blur_ssao_ps, &blur_ssao_pixel_shader);
-		rlr::SetRootSignature(blur_ssao_ps, &root_signature_1);
+		rlr::SetVertexShader(blur_ssao_ps, blur_ssao_vertex_shader);
+		rlr::SetFragmentShader(blur_ssao_ps, blur_ssao_pixel_shader);
+		rlr::SetRootSignature(blur_ssao_ps, root_signature_1);
 		rlr::Finalize(blur_ssao_ps, *device, render_window, ssao_pso_info);
 
 		Begin(*main_cmd_list, render_window.frame_idx);
 
 		Vertex vertices[] = {
-			{ { -1.f, -1.f, 0.f },{ 0, 0, 0 },{ 0, 1 } },
-			{ { 1.f, -1.f, 0.f },{ 0, 0, 0 },{ 1, 1 } },
-			{ { 1.f, 1.f, 0.f },{ 0, 0, 0 },{ 1, 0 } },
-
-			{ { 1.f, 1.f, 0.f },{ 0, 0, 0 },{ 1, 0 } },
-			{ { -1.f, 1.f, 0.f },{ 0, 0, 0 },{ 0, 0 } },
-			{ { -1.f, -1.f, 0.f },{ 0, 0, 0 },{ 0, 1 } },
+			{ { -1.f, -1.f, 0.f },{ 0, 0, 0 },{ 1, 1 } },
+			{ { 1.f, -1.f, 0.f },{ 0, 0, 0 },{ 0, 1 } },
+			{ { -1.f, 1.f, 0.f },{ 0, 0, 0 },{ 1, 0 } },
+			{ { 1.f, 1.f, 0.f },{ 0, 0, 0 },{ 0, 0 } },
 		};
 
-		Create(quad_vb, *device, vertices, 6 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		Create(quad_vb, *device, vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		StageBuffer(quad_vb, *main_cmd_list);
 
 		rlr::Load(ssao_texture, "resources/engine/textures/ssao.png");
@@ -546,6 +565,7 @@ namespace rlr {
 			PROFILER_BEGIN_GPU("Custom", main_cmd_list->native);
 			PROFILER_BEGIN_GPU("Game rendering", main_cmd_list->native);
 			Bind(*main_cmd_list, game_render_target, render_window.frame_idx, true, true);
+			SetPrimitiveTopology(*main_cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 			// Stage the static intanced rendering buffer.
 			if (static_inst_needs_staging) {
@@ -575,6 +595,7 @@ namespace rlr {
 		auto f1 = thread_pool->enqueue([&]() {
 			Begin(*shadow_cmd_list, render_window.frame_idx);
 			SBind(*shadow_cmd_list, shadow_render_target, render_window.frame_idx);
+			SetPrimitiveTopology(*shadow_cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			PROFILER_BEGIN_GPU("Shadow rendering", shadow_cmd_list->native);
 
 			recursive_func_t recursive_shadow_draw = [&](std::shared_ptr<Node> node) {
@@ -630,6 +651,7 @@ namespace rlr {
 			PROFILER_BEGIN_GPU("Blurring", deferred_cmd_list->native)
 
 			Bind(*deferred_cmd_list, blur_ps);
+			SetPrimitiveTopology(*deferred_cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 			Bind(*deferred_cmd_list, graph->GetViewport());
 
 			std::vector<DescriptorHeap*> heaps = { srv_descriptor_heap_2 };
@@ -642,7 +664,7 @@ namespace rlr {
 			Bind(*deferred_cmd_list, deferred_const_buffer, 0, render_window.frame_idx);
 
 			for (auto i = 0; i < amount; i++) {
-				Draw(*deferred_cmd_list, 6, 1);
+				Draw(*deferred_cmd_list, 4, 1);
 
 				if (i == 0) {
 					DescHeapCPUHandle at_main_srv_handle = GetCPUHandle(srv_descriptor_heap_2);
@@ -704,7 +726,7 @@ namespace rlr {
 		for (std::map<int, Batch*>::iterator it = static_instanced_batches.begin(); it != static_instanced_batches.end(); it++) {
 			DrawableNode* drawable = it->second->inst_drawable;
 
-			BIND_PIPELINE(cmd_list, drawable->pipeline_id)
+			BindPipelineOptimized(cmd_list, drawable->pipeline_id);
 			std::vector<ID3D12DescriptorHeap*> heaps = { drawable->ta->texture_heap };
 			cmd_list.native->SetDescriptorHeaps(heaps.size(), heaps.data());
 
@@ -739,6 +761,7 @@ namespace rlr {
 	*/
 	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap, Viewport viewport) {
 		Bind(cmd_list, pipeline);
+		SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		Bind(cmd_list, viewport);
 
 		std::vector<DescriptorHeap*> heaps = { srv_heap };
@@ -749,7 +772,7 @@ namespace rlr {
 
 		BindVertexBuffer(cmd_list, quad_vb);
 		Bind(cmd_list, cb, 0, render_window.frame_idx);
-		Draw(cmd_list, 6, 1);
+		Draw(cmd_list, 4, 1);
 	}
 
 	void RenderSystem::RegisterImGuiRenderFunc(std::function<void()> func) {
@@ -795,7 +818,7 @@ namespace rlr {
 		create_info.rtv_formats[1] = Format::R16G16B16A16_FLOAT; // normal
 		create_info.rtv_formats[2] = Format::R16G16B16A16_FLOAT; // position
 
-		Finalize(*ps->root_signature, *device);
+		Finalize(ps->root_signature, device);
 		Finalize(*ps, *device, render_window, create_info);
 	}
 

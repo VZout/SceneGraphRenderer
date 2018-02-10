@@ -36,7 +36,7 @@ void Create(Device** device);
 void Destroy(Device* device);
 
 // CommandQueue
-void Create(CommandQueue* cmd_queue, Device* device, CmdQueueType type);
+void Create(CommandQueue** cmd_queue, Device* device, CmdQueueType type);
 void Execute(CommandQueue* cmd_queue, std::vector<CommandList> cmd_lists, Fence* fence);
 void Destroy(CommandQueue* cmd_queue);
 
@@ -90,6 +90,7 @@ void Bind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame
 void SBind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx);
 void Bind(CommandList& cmd_list, Viewport& viewport);
 void Bind(CommandList& cmd_list, PipelineState& pipeline_state);
+void SetPrimitiveTopology(CommandList& cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 void Bind(CommandList& cmd_list, ConstantBuffer& buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 void Bind(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
@@ -132,32 +133,14 @@ struct RootSignatureCreateInfo {
 	std::vector<SamplerInfo> samplers;
 };
 
-void Create(RootSignature& root_signature, RootSignatureCreateInfo create_info);
-void Destroy(RootSignature& root_signature, Device& device);
-void Finalize(RootSignature& root_signature, Device& device);
-void Destroy(RootSignature& root_signature);
+void Create(RootSignature** root_signature, RootSignatureCreateInfo create_info);
+void Destroy(RootSignature* root_signature);
+void Finalize(RootSignature* root_signature, Device* device);
+void Destroy(RootSignature* root_signature);
 
 // Shader
-void Load(Shader& shader, ShaderType type, std::string const & path);
-void Load(Shader& shader, ShaderType type, std::string const & path);
-void Destroy(Shader& shader);
-
-#ifdef USE_VULKAN
-// Resource
-struct ResourceCreateInfo {
-	int width;
-	int height;
-	ImageTiling tiling;
-	int usage;
-	MemoryProperties mem_properties;
-	Format format;
-	ImageAspect aspect;
-};
-
-void Create(Resource& resource, Device& device, ResourceCreateInfo const& create_info);
-void TransitionImageLayout(CommandList& cmd_list, Resource& resource, Format format, ResourceState old_state, ResourceState new_state); //TODO: Rename
-void Destroy(Resource& resource);
-#endif
+void Load(Shader** shader, ShaderType type, std::string const & path);
+void Destroy(Shader* shader);
 
 // Texture
 void Load(Texture& texture, std::string const & path);
@@ -201,22 +184,4 @@ void Destroy(ConstantBuffer& buffer);
 #include "dx12\dx12_const_buffer.h"
 #include "dx12\dx12_texture_array.h"
 #include "dx12\dx12_descriptor_heap.h"
-#endif
-
-#ifdef USE_VULKAN
-#include "vk/vk_device.h"
-#include "vk/vk_root_signature.h"
-#include "vk/vk_command_list.h"
-#include "vk/vk_command_queue.h"
-#include "vk/vk_shader.h"
-#include "vk/vk_pipeline_state.h"
-#include "vk/vk_staging_buffer.h"
-#include "vk/vk_resource.h"
-#include "vk/vk_texture.h"
-#include "vk/vk_resource.h"
-#include "vk/vk_texture_array.h"
-#include "vk/vk_render_target.h"
-#include "vk/vk_viewport.h"
-#include "vk/vk_texture_sampler.h"
-#include "vk/vk_fence.h"
 #endif

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "math/vec.hpp"
-#include "math/mat.hpp"
 
 #include <DirectXMath.h>
 

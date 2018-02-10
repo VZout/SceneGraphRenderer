@@ -4,7 +4,9 @@
 
 namespace rlr {
 
-void Create(CommandQueue* cmd_queue, Device* device, CmdQueueType type) {
+void Create(CommandQueue** cmd_queue, Device* device, CmdQueueType type) {
+	CommandQueue* new_cmd_queue = new CommandQueue();
+
 	D3D12_COMMAND_QUEUE_DESC cmd_queue_desc = {};
 	cmd_queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
@@ -18,11 +20,13 @@ void Create(CommandQueue* cmd_queue, Device* device, CmdQueueType type) {
 		break;
 	}
 
-	HRESULT hr = device->native->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&cmd_queue->native));
+	HRESULT hr = device->native->CreateCommandQueue(&cmd_queue_desc, IID_PPV_ARGS(&new_cmd_queue->native));
 	if (FAILED(hr)) {
 		throw "Failed to create DX12 command queue.";
 	}
-	cmd_queue->native->SetName(L"Thisismycommandqueue");
+	new_cmd_queue->native->SetName(L"Thisismycommandqueue");
+
+	(*cmd_queue) = new_cmd_queue;
 }
 
 void Execute(CommandQueue* cmd_queue, std::vector<CommandList> cmd_lists, Fence* fence) {

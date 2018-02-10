@@ -4,18 +4,25 @@
 
 namespace rlr {
 
-void Create(RootSignature& root_signature, RootSignatureCreateInfo create_info) {
-	root_signature.create_info = create_info;
+void Create(RootSignature** root_signature, RootSignatureCreateInfo create_info) {
+	RootSignature* new_root_signature = new RootSignature();
+
+	new_root_signature->create_info = create_info;
+
+	(*root_signature) = new_root_signature;
 }
 
-void Destroy(RootSignature& root_signature, Device& device) {
+void Destroy(RootSignature* root_signature) {
+	root_signature->native->Release();
 
+	delete root_signature;
+	root_signature = nullptr;
 }
 
-void Finalize(RootSignature& root_signature, Device& device) {
-	std::vector<D3D12_STATIC_SAMPLER_DESC> samplers(root_signature.create_info.samplers.size());
-	for (auto i = 0; i < root_signature.create_info.samplers.size(); i++) {
-		auto sampler_info = root_signature.create_info.samplers[i];
+void Finalize(RootSignature* root_signature, Device* device) {
+	std::vector<D3D12_STATIC_SAMPLER_DESC> samplers(root_signature->create_info.samplers.size());
+	for (auto i = 0; i < root_signature->create_info.samplers.size(); i++) {
+		auto sampler_info = root_signature->create_info.samplers[i];
 
 		samplers[0].Filter = (D3D12_FILTER)sampler_info.filter;
 		samplers[0].AddressU = (D3D12_TEXTURE_ADDRESS_MODE)sampler_info.address_mode;
@@ -33,9 +40,9 @@ void Finalize(RootSignature& root_signature, Device& device) {
 	}
 
 	CD3DX12_ROOT_SIGNATURE_DESC root_signature_desc;
-	root_signature_desc.Init(root_signature.create_info.parameters.size(),
-		root_signature.create_info.parameters.data(),
-		root_signature.create_info.samplers.size(),
+	root_signature_desc.Init(root_signature->create_info.parameters.size(),
+		root_signature->create_info.parameters.data(),
+		root_signature->create_info.samplers.size(),
 		samplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -46,11 +53,12 @@ void Finalize(RootSignature& root_signature, Device& device) {
 		throw "Failed to create a serialized root signature";
 	}
 
-	hr = device.native->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature.native));
+	hr = device->native->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&root_signature->native));
 	if (FAILED(hr)) {
 		throw "Failed to create root signature";
 	}
-	root_signature.native->SetName(L"Native D3D12RootSignature");
+
+	root_signature->native->SetName(L"Native D3D12RootSignature");
 }
 
 void Destroy(RootSignature& root_signature) {

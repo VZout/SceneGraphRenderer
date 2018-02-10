@@ -34,7 +34,7 @@ PS_OUTPUT main(VS_OUTPUT input) : SV_TARGET
 
 	PS_OUTPUT psout;
 	psout.albedo = dc;
-	psout.normal = float4(normalize(input.normal), 1);
+	psout.normal = float4(normalize(input.normal), 0);
 	psout.pos = float4(input.frag, linearDepth(input.pos.z));
 	return psout;
 }

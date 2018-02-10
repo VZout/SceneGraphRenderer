@@ -6,7 +6,6 @@
 #include <assimp/scene.h>
 #include <iostream>
 
-#include "math\mat.hpp"
 #include "bone.h"
 #include <GLFW/glfw3.h>
 

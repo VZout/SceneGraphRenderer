@@ -1,16 +1,6 @@
 #pragma once
 
 static int num_pipeline_changes = 0;
-#ifdef REDUCE_PIPELINE_STATE_CHANGES
-#define BIND_PIPELINE(cmd_list, pipeline_id) PipelineState* ps = GetPipeline(pipeline_id); \
-	if (ps != last_pipeline_state) { \
-		Bind(cmd_list, *ps); \
-		last_pipeline_state = ps; \
-		num_pipeline_changes++; \
-	}
-#else
-#define BIND_PIPELINE(cmd_list, pipeline_id) Bind(cmd_list, *GetPipeline(pipeline_id));
-#endif
 
 #define NUM_LIGHTS 10 // todo: REMOVE THIS
 #define KERNEL_SIZE 32

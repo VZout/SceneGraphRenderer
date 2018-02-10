@@ -153,7 +153,10 @@ void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> heaps) {
 void Bind(CommandList& cmd_list, PipelineState& pipeline_state) {
 	cmd_list.native->SetPipelineState(pipeline_state.native);
 	cmd_list.native->SetGraphicsRootSignature(pipeline_state.root_signature->native);
-	cmd_list.native->IASetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+void SetPrimitiveTopology(CommandList& cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology) {
+	cmd_list.native->IASetPrimitiveTopology(topology);
 }
 	
 void Bind(CommandList& cmd_list, ConstantBuffer& buffer, unsigned int root_parameter_idx, unsigned int frame_idx) {

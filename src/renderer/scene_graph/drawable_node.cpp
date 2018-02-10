@@ -52,12 +52,12 @@ void DrawableNode::Render(rlr::CommandList& cmd_list, rlr::Camera const& camera,
 
 	if (shadows) {
 		Bind(cmd_list, m_render_system.shadow_viewport);
-		Bind(cmd_list, *m_render_system.GetPipeline(pipeline_id + "_shadow"));
+		m_render_system.BindPipelineOptimized(cmd_list, pipeline_id + "_shadow");
 		Bind(cmd_list, m_render_system.shadow_projection_view_const_buffer, 2, m_render_system.render_window.frame_idx);
 		Bind(cmd_list, *shadow_const_buffer, 0, m_render_system.render_window.frame_idx);
 	}
 	else {
-		Bind(cmd_list, *m_render_system.GetPipeline(pipeline_id));
+		m_render_system.BindPipelineOptimized(cmd_list, pipeline_id);
 		Bind(cmd_list, m_render_system.projection_view_const_buffer, 2, m_render_system.render_window.frame_idx);
 		Bind(cmd_list, *const_buffer, 0, m_render_system.render_window.frame_idx);
 	}

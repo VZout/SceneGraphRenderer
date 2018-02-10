@@ -30,7 +30,6 @@ public:
 
 	virtual void Init() = 0;
 	virtual void Render(rlr::CommandList& cmd_list, rlr::Camera const& camera, bool shadows) = 0;
-
 	virtual void OnAdded() {}
 
 	void AddChild(std::shared_ptr<Node> node);

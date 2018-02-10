@@ -17,12 +17,6 @@ std::shared_ptr<rlr::DrawableNode> right_wall;
 rlr::Texture* spot_albedo = nullptr;
 rlr::Texture* spot_spec = nullptr;
 rlr::Texture* spot_metal = nullptr;
-rlr::Texture* floor_texture = nullptr;
-rlr::Texture* floor_texture_specular = nullptr;
-rlr::Texture* floor_texture_normal = nullptr;
-rlr::Texture* metal_texture = nullptr;
-rlr::Texture* metal_texture_specular = nullptr;
-rlr::Texture* metal_texture_normal = nullptr;
 rlr::Texture* wall_texture = nullptr;
 rlr::Texture* wall_texture_specular = nullptr;
 rlr::Texture* wall_texture_normal = nullptr;
@@ -67,7 +61,7 @@ void RegisterPipelines() {
 	CD3DX12_DESCRIPTOR_RANGE  desc_table_ranges;
 	desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
 
-	rlr::RootSignature* rs = new rlr::RootSignature();
+	rlr::RootSignature* rs;
 	rlr::RootSignatureCreateInfo rs_info;
 	rs_info.samplers.push_back({ rlr::TextureFilter::FILTER_POINT, rlr::TextureAddressMode::TAM_MIRROR });
 	rs_info.parameters.resize(3);
@@ -75,37 +69,37 @@ void RegisterPipelines() {
 	rs_info.parameters[1].InitAsDescriptorTable(1, &desc_table_ranges, D3D12_SHADER_VISIBILITY_PIXEL);
 	rs_info.parameters[2].InitAsConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 
-	Create(*rs, rs_info);
+	Create(&rs, rs_info);
 
-	rlr::Shader pixel_shader;
-	rlr::Shader vertex_shader;
-	Load(vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/tests/vertex.hlsl");
-	Load(pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/tests/pixel.hlsl");
+	rlr::Shader* pixel_shader; // TODO: These shaders are not being released
+	rlr::Shader* vertex_shader;
+	Load(&vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/tests/vertex.hlsl");
+	Load(&pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/tests/pixel.hlsl");
 
-	rlr::Shader anim_pixel_shader;
-	rlr::Shader anim_vertex_shader;
-	Load(anim_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/tests/anim_vertex.hlsl");
-	Load(anim_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/tests/anim_pixel.hlsl");
+	rlr::Shader* anim_pixel_shader;
+	rlr::Shader* anim_vertex_shader;
+	Load(&anim_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/tests/anim_vertex.hlsl");
+	Load(&anim_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/tests/anim_pixel.hlsl");
 
 	rlr::PipelineState* ps = new rlr::PipelineState();
-	rlr::SetVertexShader(*ps, &vertex_shader);
-	rlr::SetFragmentShader(*ps, &pixel_shader);
+	rlr::SetVertexShader(*ps, vertex_shader);
+	rlr::SetFragmentShader(*ps, pixel_shader);
 	rlr::SetRootSignature(*ps, rs);
 
 	rlr::PipelineState* sps = new rlr::PipelineState();
-	rlr::SetVertexShader(*sps, &vertex_shader);
-	rlr::SetFragmentShader(*sps, &pixel_shader);
+	rlr::SetVertexShader(*sps, vertex_shader);
+	rlr::SetFragmentShader(*sps, pixel_shader);
 	rlr::SetRootSignature(*sps, rs);
 	sps->temp = true;
 
 	rlr::PipelineState* anim = new rlr::PipelineState();
-	rlr::SetVertexShader(*anim, &anim_vertex_shader);
-	rlr::SetFragmentShader(*anim, &anim_pixel_shader);
+	rlr::SetVertexShader(*anim, anim_vertex_shader);
+	rlr::SetFragmentShader(*anim, anim_pixel_shader);
 	rlr::SetRootSignature(*anim, rs);
 
 	rlr::PipelineState* sanim = new rlr::PipelineState();
-	rlr::SetVertexShader(*sanim, &anim_vertex_shader);
-	rlr::SetFragmentShader(*sanim, &anim_pixel_shader);
+	rlr::SetVertexShader(*sanim, anim_vertex_shader);
+	rlr::SetFragmentShader(*sanim, anim_pixel_shader);
 	rlr::SetRootSignature(*sanim, rs);
 	sanim->temp = true;
 
@@ -119,23 +113,20 @@ void Staging(rlr::Device* device, rlr::CommandList* cmd_list) {
 	StageTexture(*spot_albedo, *device, *cmd_list);
 	StageTexture(*spot_spec, *device, *cmd_list);
 	StageTexture(*spot_metal, *device, *cmd_list);
-	StageTexture(*floor_texture, *device, *cmd_list);
-	StageTexture(*floor_texture_specular, *device, *cmd_list);
-	StageTexture(*floor_texture_normal, *device, *cmd_list);
-	StageTexture(*metal_texture, *device, *cmd_list);
-	StageTexture(*metal_texture_specular, *device, *cmd_list);
-	StageTexture(*metal_texture_normal, *device, *cmd_list);
 	StageTexture(*wall_texture, *device, *cmd_list);
 	StageTexture(*wall_texture_specular, *device, *cmd_list);
 	StageTexture(*wall_texture_normal, *device, *cmd_list);
 	Stage(*dr0->model, *device, *cmd_list);
-	Stage(*floor_model, *device, *cmd_list);
+	Stage(*floor_model, *device, *cmd_list); 
 	Stage(*dr1->model, *device, *cmd_list);
 }
 
-#include <stdlib.h>
-
-int main() {
+#ifdef _temp
+INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
+#else
+int main()
+#endif
+{
 
 	window = new rlr::Window();
 	window->Create("Rougelike Engine", 1280, 720, false);
@@ -154,12 +145,6 @@ int main() {
 	rlr::Load(*(spot_albedo			   = new rlr::Texture()), "resources/tests/spot.png");
 	rlr::Load(*(spot_spec			   = new rlr::Texture()), "resources/tests/spot_specular.png");
 	rlr::Load(*(spot_metal             = new rlr::Texture()), "resources/tests/spot_metal.png");
-	rlr::Load(*(floor_texture          = new rlr::Texture()), "resources/tests/rustediron2_basecolor.png");
-	rlr::Load(*(floor_texture_specular = new rlr::Texture()), "resources/tests/rustediron2_metallic.png");
-	rlr::Load(*(floor_texture_normal   = new rlr::Texture()), "resources/tests/rustediron2_normal.png");
-	rlr::Load(*(metal_texture          = new rlr::Texture()), "resources/tests/greasy-metal-pan1-albedo.png");
-	rlr::Load(*(metal_texture_specular = new rlr::Texture()), "resources/tests/greasy-metal-pan1-roughness.png");
-	rlr::Load(*(metal_texture_normal   = new rlr::Texture()), "resources/tests/greasy-metal-pan1-normal.png");
 	rlr::Load(*(wall_texture           = new rlr::Texture()), "resources/tests/agedplanks1-albedo.png");
 	rlr::Load(*(wall_texture_specular  = new rlr::Texture()), "resources/tests/agedplanks1-roughness.png");
 	rlr::Load(*(wall_texture_normal    = new rlr::Texture()), "resources/tests/agedplanks1-normal4-ue.png");
@@ -185,8 +170,8 @@ int main() {
 	});
 
 	std::vector<rlr::Texture*> spot_textures = { spot_albedo, spot_spec, spot_albedo, spot_metal};
-	std::vector<rlr::Texture*> metal_textures = { metal_texture, metal_texture_specular, metal_texture_normal };
-	std::vector<rlr::Texture*> floor_textures = { floor_texture, floor_texture_specular, floor_texture_normal };
+	std::vector<rlr::Texture*> metal_textures = { wall_texture, wall_texture_specular, wall_texture_normal };
+	std::vector<rlr::Texture*> floor_textures = { wall_texture, wall_texture_specular, wall_texture_normal };
 	std::vector<rlr::Texture*> wall_textures = { wall_texture, wall_texture_specular };
 	dr0->SetTextures(spot_textures);
 	back_wall->SetTextures(wall_textures);

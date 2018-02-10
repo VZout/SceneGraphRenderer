@@ -1,7 +1,7 @@
 #pragma once
 
 #define USE_D3D12
-//#define REDUCE_PIPELINE_STATE_CHANGES
+#define REDUCE_PIPELINE_STATE_CHANGES
 
 #include "window.h"
 #include "interface.h"
@@ -21,7 +21,6 @@
 #include "scene_graph\scene_graph.h"
 #include "scene_graph\drawable_node.h"
 
-#define REDUCE_PIPELINE_STATE_CHANGES
 #include "render_system_defines.h"
 
 #include <assimp/scene.h>
@@ -83,19 +82,19 @@ public:
 	Sky texture
 	*/
 	DescriptorHeap* srv_descriptor_heap_0;
-	RootSignature root_signature_0;
+	RootSignature* root_signature_0;
 	/*
 	ssao
 	*/
 	DescriptorHeap* srv_descriptor_heap_1;
-	RootSignature root_signature_1;
+	RootSignature* root_signature_1;
 	/*
 	deferred hdr
 	deferred overdose
 	overdosed blur
 	*/
 	DescriptorHeap* srv_descriptor_heap_2;
-	RootSignature root_signature_2;
+	RootSignature* root_signature_2;
 
 	DescriptorHeap* imgui_descriptor_heap;
 
@@ -108,15 +107,15 @@ public:
 
 	// SSAO Rendering
 	PipelineState ssao_ps;
-	rlr::Shader ssao_pixel_shader;
-	rlr::Shader ssao_vertex_shader;
+	rlr::Shader* ssao_pixel_shader;
+	rlr::Shader* ssao_vertex_shader;
 	ConstantBuffer ssao_const_buffer;
 	rlr::Texture ssao_texture;
 
 	// SSAO BLUR Rendering
 	PipelineState blur_ssao_ps;
-	rlr::Shader blur_ssao_pixel_shader;
-	rlr::Shader blur_ssao_vertex_shader;
+	rlr::Shader* blur_ssao_pixel_shader;
+	rlr::Shader* blur_ssao_vertex_shader;
 	ConstantBuffer blur_ssao_const_buffer;
 	rlr::Texture blur_ssao_texture;
 
@@ -126,12 +125,12 @@ public:
 	PipelineState deferred_ps;
 	PipelineState blur_ps;
 	PipelineState final_composition_ps;
-	rlr::Shader deferred_pixel_shader;
-	rlr::Shader deferred_vertex_shader;
-	rlr::Shader composition_pixel_shader;
-	rlr::Shader composition_vertex_shader;
-	rlr::Shader blur_pixel_shader;
-	rlr::Shader blur_vertex_shader;
+	rlr::Shader* deferred_pixel_shader;
+	rlr::Shader* deferred_vertex_shader;
+	rlr::Shader* composition_pixel_shader;
+	rlr::Shader* composition_vertex_shader;
+	rlr::Shader* blur_pixel_shader;
+	rlr::Shader* blur_vertex_shader;
 	ConstantBuffer deferred_const_buffer;
 
 	ConstantBuffer compo_const_buffer;
@@ -167,6 +166,7 @@ public:
 	void Populate_InstancedDrawables(CommandList& cmd_list, Camera const& camera);
 	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap, Viewport viewport);
 
+	void BindPipelineOptimized(CommandList& cmd_list, std::string const& id);
 	void SetupSwapchain(int width, int height);
 	void SetupDescriptorHeaps();
 	void SetupRootSignatures();
