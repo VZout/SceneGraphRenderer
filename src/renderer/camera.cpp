@@ -45,9 +45,9 @@ void Camera::SetOrthographic(float width, float height) {
 void Camera::Update() {
 	fm::vec new_forward(0, 0, 0);
 
-	new_forward[2] = cos(vik::rads(_euler[1])) * cos(vik::rads(_euler[0]));
-	new_forward[1] = sin(vik::rads(_euler[0]));
-	new_forward[0] = sin(vik::rads(_euler[1])) * cos(vik::rads(_euler[0]));
+	new_forward[2] = cos(fm::rads(_euler[1])) * cos(fm::rads(_euler[0]));
+	new_forward[1] = sin(fm::rads(_euler[0]));
+	new_forward[0] = sin(fm::rads(_euler[1])) * cos(fm::rads(_euler[0]));
 
 	_forward = new_forward.Normalized();
 	_right = _forward.Cross(_world_up).Normalized();
