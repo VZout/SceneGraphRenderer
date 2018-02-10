@@ -110,15 +110,15 @@ void RegisterPipelines() {
 }
 
 void Staging(rlr::Device* device, rlr::CommandList* cmd_list) {
-	StageTexture(*spot_albedo, *device, *cmd_list);
-	StageTexture(*spot_spec, *device, *cmd_list);
-	StageTexture(*spot_metal, *device, *cmd_list);
-	StageTexture(*wall_texture, *device, *cmd_list);
-	StageTexture(*wall_texture_specular, *device, *cmd_list);
-	StageTexture(*wall_texture_normal, *device, *cmd_list);
-	Stage(*dr0->model, *device, *cmd_list);
-	Stage(*floor_model, *device, *cmd_list); 
-	Stage(*dr1->model, *device, *cmd_list);
+	Stage(*spot_albedo, device, cmd_list);
+	Stage(*spot_spec, device, cmd_list);
+	Stage(*spot_metal, device, cmd_list);
+	Stage(*wall_texture, device, cmd_list);
+	Stage(*wall_texture_specular, device, cmd_list);
+	Stage(*wall_texture_normal, device, cmd_list);
+	Stage(*dr0->model, device, cmd_list);
+	Stage(*floor_model, device, cmd_list); 
+	Stage(*dr1->model, device, cmd_list);
 }
 
 #ifdef _temp
@@ -193,7 +193,7 @@ int main()
 	}
 
 	for (std::map<int, rlr::Batch*>::iterator it = render_system->static_instanced_batches.begin(); it != render_system->static_instanced_batches.end(); it++) {
-		Create(it->second->instanced_staging_buffer, *render_system->device, it->second->inst_positions.data(), it->second->inst_positions.size() * sizeof(fm::vec3), sizeof(fm::vec3), rlr::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		Create(&it->second->instanced_staging_buffer, render_system->device, it->second->inst_positions.data(), it->second->inst_positions.size() * sizeof(fm::vec3), sizeof(fm::vec3), rlr::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 	}
 
 	dr1->model->meshes[0].skeleton.PlayAnimation(dr1->model->animations[0]);

@@ -66,12 +66,12 @@ namespace rlr {
 #endif	
 	}
 
-	void RenderSystem::BindPipelineOptimized(CommandList & cmd_list, std::string const& id)
+	void RenderSystem::BindPipelineOptimized(CommandList* cmd_list, std::string const& id)
 	{
 #ifdef REDUCE_PIPELINE_STATE_CHANGES
 	PipelineState* ps = GetPipeline(id); \
 	if (ps != last_pipeline_state) { \
-		Bind(cmd_list, *ps); \
+		Bind(*cmd_list, *ps); \
 		last_pipeline_state = ps; \
 		num_pipeline_changes++; \
 	}
@@ -318,17 +318,16 @@ namespace rlr {
 			Create(&fence, device);
 		}
 
-		Create(deferred_const_buffer, *device, sizeof(CBSceneStruct));
-		Create(ssao_const_buffer, *device, sizeof(CBSSAOStruct));
-		Create(projection_view_const_buffer, *device, sizeof(PVCBStruct));
-		Create(shadow_projection_view_const_buffer, *device, sizeof(PVCBStruct));
+		Create(&deferred_const_buffer, device, sizeof(CBSceneStruct));
+		Create(&ssao_const_buffer, device, sizeof(CBSSAOStruct));
+		Create(&projection_view_const_buffer, device, sizeof(PVCBStruct));
+		Create(&shadow_projection_view_const_buffer, device, sizeof(PVCBStruct));
+		Create(&compo_const_buffer, device, sizeof(CBCompo));
 
 		DescriptorHeapCreateInfo imgui_heap_create_info;
 		imgui_heap_create_info.num_descriptors = 4;
 		imgui_heap_create_info.type = DescriptorHeapType::DESC_HEAP_TYPE_CBV_SRV_UAV;
 		Create(&imgui_descriptor_heap, device, imgui_heap_create_info);
-
-		Create(compo_const_buffer, *device, sizeof(CBCompo));
 
 		//if (render_engine) {
 		ImGui::ApplyCustomStyle();
@@ -441,14 +440,14 @@ namespace rlr {
 			{ { 1.f, 1.f, 0.f },{ 0, 0, 0 },{ 0, 0 } },
 		};
 
-		Create(quad_vb, *device, vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
-		StageBuffer(quad_vb, *main_cmd_list);
+		Create(&quad_vb, device, vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		StageBuffer(quad_vb, main_cmd_list);
 
 		rlr::Load(ssao_texture, "resources/engine/textures/ssao.png");
 		rlr::Load(sky_texture, "resources/tests/sky.dds");
 
-		StageTexture(ssao_texture, *device, *main_cmd_list); 
-		StageTexture(sky_texture, *device, *main_cmd_list, true);
+		Stage(ssao_texture, device, main_cmd_list); 
+		Stage(sky_texture, device, main_cmd_list, true);
 
 		staging_func(device, main_cmd_list);
 
@@ -571,21 +570,21 @@ namespace rlr {
 			// Stage the static intanced rendering buffer.
 			if (static_inst_needs_staging) {
 				for (std::map<int, Batch*>::iterator it = static_instanced_batches.begin(); it != static_instanced_batches.end(); it++) {
-					StageBuffer(it->second->instanced_staging_buffer, *main_cmd_list);
+					StageBuffer(it->second->instanced_staging_buffer, main_cmd_list);
 				}
 				static_inst_needs_staging = false;
 			}
 
 			recursive_func_t recursive_draw = [&](std::shared_ptr<Node> node) {
 				for (auto child : node->GetChildren()) {
-					child->Render(*main_cmd_list, *cam, false);
+					child->Render(main_cmd_list, *cam, false);
 					recursive_draw(child);
 				}
 			};
 
 			recursive_draw(graph->root);
 
-			Populate_InstancedDrawables(*main_cmd_list, *cam);
+			Populate_InstancedDrawables(main_cmd_list, *cam);
 
 			PROFILER_END_GPU(main_cmd_list->native)
 			End(*main_cmd_list);
@@ -601,7 +600,7 @@ namespace rlr {
 
 			recursive_func_t recursive_shadow_draw = [&](std::shared_ptr<Node> node) {
 				for (auto child : node->GetChildren()) {
-					child->Render(*shadow_cmd_list, *cam, true);
+					child->Render(shadow_cmd_list, *cam, true);
 					recursive_shadow_draw(child);
 				}
 			};
@@ -661,11 +660,11 @@ namespace rlr {
 			DescHeapGPUHandle handle = GetGPUHandle(srv_descriptor_heap_2);
 			Bind(*deferred_cmd_list, handle, 1);
 
-			BindVertexBuffer(*deferred_cmd_list, quad_vb);
-			Bind(*deferred_cmd_list, deferred_const_buffer, 0, render_window.frame_idx);
+			BindVertexBuffer(deferred_cmd_list, quad_vb);
+			Bind(deferred_cmd_list, deferred_const_buffer, 0, render_window.frame_idx);
 
 			for (auto i = 0; i < amount; i++) {
-				Draw(*deferred_cmd_list, 4, 1);
+				Draw(deferred_cmd_list, 4, 1);
 
 				if (i == 0) {
 					DescHeapCPUHandle at_main_srv_handle = GetCPUHandle(srv_descriptor_heap_2);
@@ -723,29 +722,29 @@ namespace rlr {
 	*	This function requires a render target to be bound BEFORE being called.
 	*   The render target is being cleared.
 	*/
-	void RenderSystem::Populate_InstancedDrawables(CommandList& cmd_list, Camera const& camera) {
+	void RenderSystem::Populate_InstancedDrawables(CommandList* cmd_list, Camera const& camera) {
 		for (std::map<int, Batch*>::iterator it = static_instanced_batches.begin(); it != static_instanced_batches.end(); it++) {
 			DrawableNode* drawable = it->second->inst_drawable;
 
 			BindPipelineOptimized(cmd_list, drawable->pipeline_id);
 			std::vector<ID3D12DescriptorHeap*> heaps = { drawable->ta->texture_heap };
-			cmd_list.native->SetDescriptorHeaps(heaps.size(), heaps.data());
+			cmd_list->native->SetDescriptorHeaps(heaps.size(), heaps.data());
 
 			for (auto i = 0; i < drawable->model->meshes.size(); i++) {
 				D3D12_VERTEX_BUFFER_VIEW views[2];
-				views[0].BufferLocation = drawable->model->meshes[i].vb.buffer->GetGPUVirtualAddress();
-				views[0].StrideInBytes = drawable->model->meshes[i].vb.stride_in_bytes;
-				views[0].SizeInBytes = drawable->model->meshes[i].vb.size;
+				views[0].BufferLocation = drawable->model->meshes[i].vb->buffer->GetGPUVirtualAddress();
+				views[0].StrideInBytes = drawable->model->meshes[i].vb->stride_in_bytes;
+				views[0].SizeInBytes = drawable->model->meshes[i].vb->size;
 
-				views[1].BufferLocation = it->second->instanced_staging_buffer.buffer->GetGPUVirtualAddress();
-				views[1].StrideInBytes = it->second->instanced_staging_buffer.stride_in_bytes;
-				views[1].SizeInBytes = it->second->instanced_staging_buffer.size;
+				views[1].BufferLocation = it->second->instanced_staging_buffer->buffer->GetGPUVirtualAddress();
+				views[1].StrideInBytes = it->second->instanced_staging_buffer->stride_in_bytes;
+				views[1].SizeInBytes = it->second->instanced_staging_buffer->size;
 
-				cmd_list.native->IASetVertexBuffers(0, 2, views);
+				cmd_list->native->IASetVertexBuffers(0, 2, views);
 
 				BindIndexBuffer(cmd_list, drawable->model->meshes[i].ib);
-				Bind(cmd_list, *drawable->ta, 1);
-				Bind(cmd_list, *drawable->const_buffer, 0, render_window.frame_idx);
+				Bind(*cmd_list, *drawable->ta, 1);
+				Bind(cmd_list, drawable->const_buffer, 0, render_window.frame_idx);
 
 				Bind(cmd_list, projection_view_const_buffer, 2, render_window.frame_idx);
 
@@ -760,7 +759,7 @@ namespace rlr {
 	*	This function requires a render target to be bound BEFORE being called.
 	*	The render target is NOT being cleared.
 	*/
-	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap, Viewport viewport) {
+	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer* cb, DescriptorHeap* srv_heap, Viewport viewport) {
 		Bind(cmd_list, pipeline);
 		SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		Bind(cmd_list, viewport);
@@ -771,9 +770,9 @@ namespace rlr {
 		DescHeapGPUHandle handle = GetGPUHandle(srv_heap);
 		Bind(cmd_list, handle, 1);
 
-		BindVertexBuffer(cmd_list, quad_vb);
-		Bind(cmd_list, cb, 0, render_window.frame_idx);
-		Draw(cmd_list, 4, 1);
+		BindVertexBuffer(&cmd_list, quad_vb);
+		Bind(&cmd_list, cb, 0, render_window.frame_idx);
+		Draw(&cmd_list, 4, 1);
 	}
 
 	void RenderSystem::RegisterImGuiRenderFunc(std::function<void()> func) {
@@ -841,39 +840,6 @@ namespace rlr {
 		registerd_pipelines.clear();
 	}
 
-	void RenderSystem::UpdateGenericCB(Drawable& drawable, fm::vec3 position, fm::vec3 rotation, fm::vec3 scale, bool all) {
-		{
-			CBStruct cb_data;
-
-			DirectX::XMMATRIX tr = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
-			DirectX::XMMATRIX rotXMat = DirectX::XMMatrixRotationX(rotation.x);
-			DirectX::XMMATRIX rotYMat = DirectX::XMMatrixRotationY(rotation.y);
-			DirectX::XMMATRIX rotZMat = DirectX::XMMatrixRotationZ(rotation.z);
-			DirectX::XMMATRIX rotMat = rotXMat * rotYMat * rotZMat;
-			DirectX::XMMATRIX sc = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
-
-			DirectX::XMMATRIX model = sc * rotMat * tr;
-			DirectX::XMStoreFloat4x4(&cb_data.model, model);
-
-			cb_data.instanced = drawable.instanced;
-
-			for (size_t i = 0; i < drawable.model.meshes[0].skeleton.bone_mats.size(); i++) {
-				cb_data.weightmatrices[i] = drawable.model.meshes[0].skeleton.bone_mats[i];
-			}
-
-			if (all) {
-				for (auto i = 0; i < 3; i++) {
-					Update(drawable.const_buffer, i, sizeof(cb_data), &cb_data);
-					Update(drawable.shadow_const_buffer, i, sizeof(cb_data), &cb_data);
-				}
-			}
-			else {
-				Update(drawable.const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
-				Update(drawable.shadow_const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
-			}
-		}
-	}
-
 	void RenderSystem::UpdateGenericCB(std::shared_ptr<DrawableNode> drawable, fm::vec3 position, fm::vec3 rotation, fm::vec3 scale, bool all) {
 		{
 			CBStruct cb_data;
@@ -896,13 +862,13 @@ namespace rlr {
 
 			if (all) {
 				for (auto i = 0; i < 3; i++) {
-					Update(*drawable->const_buffer, i, sizeof(cb_data), &cb_data);
-					Update(*drawable->shadow_const_buffer, i, sizeof(cb_data), &cb_data);
+					Update(drawable->const_buffer, i, sizeof(cb_data), &cb_data);
+					Update(drawable->shadow_const_buffer, i, sizeof(cb_data), &cb_data);
 				}
 			}
 			else {
-				Update(*drawable->const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
-				Update(*drawable->shadow_const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
+				Update(drawable->const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
+				Update(drawable->shadow_const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
 			}
 		}
 	}

@@ -21,8 +21,8 @@ struct Mesh {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
-	StagingBuffer vb;
-	StagingBuffer ib;
+	StagingBuffer* vb;
+	StagingBuffer* ib;
 
 	Skeleton skeleton;
 };
@@ -43,7 +43,7 @@ struct Model {
 };
 
 void Load(Model& model, std::string const & path);
-void Stage(Model& model, Device& device, CommandList& cmd_list);
+void Stage(Model& model, Device* device, CommandList* cmd_list);
 void Destroy(Model& model);
 
 } /* rlr */

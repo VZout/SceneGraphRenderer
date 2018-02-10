@@ -3,6 +3,7 @@
 #include "enums.h"
 
 #include <vector>
+#include <any>
 
 #include "dx12\d3dx12.h"
 
@@ -91,14 +92,14 @@ void SBind(CommandList& cmd_list, RenderTarget& render_target, unsigned int fram
 void Bind(CommandList& cmd_list, Viewport& viewport);
 void Bind(CommandList& cmd_list, PipelineState& pipeline_state);
 void SetPrimitiveTopology(CommandList& cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
-void Bind(CommandList& cmd_list, ConstantBuffer& buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
+void Bind(CommandList* cmd_list, ConstantBuffer* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
 void Bind(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_param_index);
 void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> heaps);
-void BindVertexBuffer(CommandList& cmd_list, StagingBuffer& buffer);
-void BindIndexBuffer(CommandList& cmd_list, StagingBuffer& buffer, unsigned int offset = 0);
-void Draw(CommandList& cmd_list, unsigned int vertex_count, unsigned int inst_count);
-void DrawIndexed(CommandList& cmd_list, unsigned int idx_count, unsigned int inst_count);
+void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer);
+void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset = 0);
+void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count);
+void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count);
 void Transition(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_index, ResourceState from, ResourceState to);
 void Transition(CommandList& cmd_list, RenderTarget& render_target, ResourceState from, ResourceState to);
 void Destroy(CommandList& cmd_list);
@@ -144,7 +145,7 @@ void Destroy(Shader* shader);
 
 // Texture
 void Load(Texture& texture, std::string const & path);
-void StageTexture(Texture& texture, Device& device, CommandList& cmd_list, bool dds = false);
+void Stage(Texture& texture, Device* device, CommandList* cmd_list, bool dds = false);
 void Destroy(Texture& texture);
 
 // TextureArray
@@ -156,16 +157,16 @@ void Create(Viewport& viewport, int width, int height);
 void Destroy(Viewport& viewport);
 
 // StagingBuffer
-void Create(StagingBuffer& buffer, Device& device, void* data, uint64_t size, uint64_t stride, ResourceState resource_state);
-void Update(StagingBuffer& buffer, Device& device, unsigned int size, void* data);
-void StageBuffer(StagingBuffer& buffer, CommandList& cmd_list);
-void FreeStagingBuffer(StagingBuffer& buffer);
-void Destroy(StagingBuffer& buffer);
+void Create(StagingBuffer** buffer, Device* device, void* data, uint64_t size, uint64_t stride, ResourceState resource_state);
+void Update(StagingBuffer* buffer, Device* device, unsigned int size, void* data);
+void StageBuffer(StagingBuffer* buffer, CommandList* cmd_list);
+void FreeStagingBuffer(StagingBuffer* buffer);
+void Destroy(StagingBuffer* buffer);
 
 // ConstantBuffer
-void Create(ConstantBuffer& buffer, Device& device, unsigned int size);
-void Update(ConstantBuffer& buffer, unsigned int frame_index, unsigned int size, void* data);
-void Destroy(ConstantBuffer& buffer);
+void Create(ConstantBuffer** buffer, Device* device, unsigned int size);
+void Update(ConstantBuffer* buffer, unsigned int frame_index, unsigned int size, void* data);
+void Destroy(ConstantBuffer* buffer);
 
 } /* rlr */
 

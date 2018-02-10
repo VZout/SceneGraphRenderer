@@ -61,7 +61,7 @@ namespace rlr
 
 	}
 
-	void RootNode::Render(CommandList& cmd_list, Camera const& camera, bool shadows)
+	void RootNode::Render(CommandList* cmd_list, Camera const& camera, bool shadows)
 	{
 
 	}

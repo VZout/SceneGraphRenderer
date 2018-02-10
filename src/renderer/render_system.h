@@ -40,12 +40,11 @@ struct Batch {
 	DrawableNode* inst_drawable;
 	int num_inst_model = 0;
 	std::vector<fm::vec3> inst_positions;
-	StagingBuffer instanced_staging_buffer;
+	StagingBuffer* instanced_staging_buffer;
 };
 
 
 class RenderSystem {
-	friend class Drawable;
 private:
 	std::map<std::string, PipelineState*> registerd_pipelines;
 	std::map<std::string, Material*> registerd_materials;
@@ -99,27 +98,27 @@ public:
 	// Instanced
 	std::map<int, Batch*> static_instanced_batches;
 	bool static_inst_needs_staging = false;
-	ConstantBuffer projection_view_const_buffer;
+	ConstantBuffer* projection_view_const_buffer;
 
-	ConstantBuffer shadow_projection_view_const_buffer;
+	ConstantBuffer* shadow_projection_view_const_buffer;
 
 	// SSAO Rendering
 	PipelineState ssao_ps;
 	rlr::Shader* ssao_pixel_shader;
 	rlr::Shader* ssao_vertex_shader;
-	ConstantBuffer ssao_const_buffer;
+	ConstantBuffer* ssao_const_buffer;
 	rlr::Texture ssao_texture;
 
 	// SSAO BLUR Rendering
 	PipelineState blur_ssao_ps;
 	rlr::Shader* blur_ssao_pixel_shader;
 	rlr::Shader* blur_ssao_vertex_shader;
-	ConstantBuffer blur_ssao_const_buffer;
+	ConstantBuffer* blur_ssao_const_buffer;
 	rlr::Texture blur_ssao_texture;
 
 	// Deferred Rendering
 	CommandList* deferred_cmd_list;
-	StagingBuffer quad_vb;
+	StagingBuffer* quad_vb;
 	PipelineState deferred_ps;
 	PipelineState blur_ps;
 	PipelineState final_composition_ps;
@@ -129,9 +128,9 @@ public:
 	rlr::Shader* composition_vertex_shader;
 	rlr::Shader* blur_pixel_shader;
 	rlr::Shader* blur_vertex_shader;
-	ConstantBuffer deferred_const_buffer;
+	ConstantBuffer* deferred_const_buffer;
 
-	ConstantBuffer compo_const_buffer;
+	ConstantBuffer* compo_const_buffer;
 
 	RenderTarget game_render_target;
 	RenderTarget imgui_game_render_target;
@@ -161,10 +160,10 @@ public:
 	unsigned int frames = 0;
 	std::chrono::time_point<std::chrono::high_resolution_clock> prev;
 
-	void Populate_InstancedDrawables(CommandList& cmd_list, Camera const& camera);
-	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer& cb, DescriptorHeap* srv_heap, Viewport viewport);
+	void Populate_InstancedDrawables(CommandList* cmd_list, Camera const& camera);
+	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer* cb, DescriptorHeap* srv_heap, Viewport viewport);
 
-	void BindPipelineOptimized(CommandList& cmd_list, std::string const& id);
+	void BindPipelineOptimized(CommandList* cmd_list, std::string const& id);
 	void SetupSwapchain(int width, int height);
 	void SetupDescriptorHeaps();
 	void SetupRootSignatures();
@@ -193,7 +192,6 @@ public:
 	void ClearAllPipelines();
 	PipelineState* GetPipeline(std::string id);
 
-	void UpdateGenericCB(Drawable& drawable, fm::vec3 position, fm::vec3 rotation, fm::vec3 scale, bool all);
 	void UpdateGenericCB(std::shared_ptr<DrawableNode> drawable, fm::vec3 position, fm::vec3 rotation, fm::vec3 scale, bool all);
 	void UpdateSceneCB();
 	void UpdatePVCB();

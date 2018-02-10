@@ -159,8 +159,8 @@ void SetPrimitiveTopology(CommandList& cmd_list, D3D12_PRIMITIVE_TOPOLOGY topolo
 	cmd_list.native->IASetPrimitiveTopology(topology);
 }
 	
-void Bind(CommandList& cmd_list, ConstantBuffer& buffer, unsigned int root_parameter_idx, unsigned int frame_idx) {
-	cmd_list.native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer.buffer[frame_idx]->GetGPUVirtualAddress());
+void Bind(CommandList* cmd_list, ConstantBuffer* buffer, unsigned int root_parameter_idx, unsigned int frame_idx) {
+	cmd_list->native->SetGraphicsRootConstantBufferView(root_parameter_idx, buffer->buffer[frame_idx]->GetGPUVirtualAddress());
 }
 
 void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index) {
@@ -171,34 +171,35 @@ void Bind(CommandList& cmd_list, DescHeapGPUHandle& handle, unsigned int root_pa
 	cmd_list.native->SetGraphicsRootDescriptorTable(root_param_index, handle.native);
 }
 
-void BindVertexBuffer(CommandList& cmd_list, StagingBuffer& buffer) {
+void BindVertexBuffer(CommandList* cmd_list, StagingBuffer* buffer) {
 	D3D12_VERTEX_BUFFER_VIEW view;
-	view.BufferLocation = buffer.buffer->GetGPUVirtualAddress();
-	view.StrideInBytes = buffer.stride_in_bytes;
-	view.SizeInBytes = buffer.size;
-	cmd_list.native->IASetVertexBuffers(0, 1, &view); // set the vertex buffer (using the vertex buffer view)
+	view.BufferLocation = buffer->buffer->GetGPUVirtualAddress();
+	view.StrideInBytes = buffer->stride_in_bytes;
+	view.SizeInBytes = buffer->size;
+
+	cmd_list->native->IASetVertexBuffers(0, 1, &view);
 }
 
-void BindIndexBuffer(CommandList& cmd_list, StagingBuffer& buffer, unsigned int offset) {
+void BindIndexBuffer(CommandList* cmd_list, StagingBuffer* buffer, unsigned int offset) {
 	D3D12_INDEX_BUFFER_VIEW view;
-	view.BufferLocation = buffer.buffer->GetGPUVirtualAddress();
+	view.BufferLocation = buffer->buffer->GetGPUVirtualAddress();
 	view.Format = DXGI_FORMAT_R32_UINT;
-	view.SizeInBytes = buffer.size;
+	view.SizeInBytes = buffer->size;
 
-	cmd_list.native->IASetIndexBuffer(&view);
+	cmd_list->native->IASetIndexBuffer(&view);
 }
 
-void Draw(CommandList& cmd_list, unsigned int vertex_count, unsigned int inst_count) {
-	cmd_list.native->DrawInstanced(vertex_count, inst_count, 0, 0); // finally draw 3 vertices (draw the triangle)
+void Draw(CommandList* cmd_list, unsigned int vertex_count, unsigned int inst_count) {
+	cmd_list->native->DrawInstanced(vertex_count, inst_count, 0, 0);
 }
 
-void DrawIndexed(CommandList& cmd_list, unsigned int idx_count, unsigned int inst_count) {
-	cmd_list.native->DrawIndexedInstanced(idx_count, inst_count, 0, 0, 0);
+void DrawIndexed(CommandList* cmd_list, unsigned int idx_count, unsigned int inst_count) {
+	cmd_list->native->DrawIndexedInstanced(idx_count, inst_count, 0, 0, 0);
 }
 
 void Transition(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_index, ResourceState from, ResourceState to) {
 	CD3DX12_RESOURCE_BARRIER end_transition = CD3DX12_RESOURCE_BARRIER::Transition(
-		render_target.render_targets[frame_index % render_target.render_targets.size()],
+		render_target.render_targets[frame_index % render_target.render_targets.size()], // TODO: Mod here should be unnessessary and should throw instead because performance.
 		(D3D12_RESOURCE_STATES)from,
 		(D3D12_RESOURCE_STATES)to
 	);

@@ -211,10 +211,10 @@ void Load(Model& model, std::string const& path) {
 		model.meshes[0].skeleton.Init(model.bones, model.global_invere_transform);
 }
 
-void Stage(Model& model, Device& device, CommandList& cmd_list) {
+void Stage(Model& model, Device* device, CommandList* cmd_list) {
 	for (auto i = 0; i < model.meshes.size(); i++) {
-		Create(model.meshes[i].vb, device, model.meshes[i].vertices.data(), model.meshes[i].vertices.size() * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
-		Create(model.meshes[i].ib, device, model.meshes[i].indices.data(), sizeof(DWORD) * model.meshes[i].indices.size(), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		Create(&model.meshes[i].vb, device, model.meshes[i].vertices.data(), model.meshes[i].vertices.size() * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
+		Create(&model.meshes[i].ib, device, model.meshes[i].indices.data(), sizeof(DWORD) * model.meshes[i].indices.size(), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 
 		StageBuffer(model.meshes[i].vb, cmd_list);
 		StageBuffer(model.meshes[i].ib, cmd_list);

@@ -17,7 +17,7 @@ public:
 	void SetTextures(std::vector<Texture*> textures);
 
 	virtual void Init() override;
-	virtual void Render(CommandList& cmd_list, Camera const& camera, bool shadows) override;
+	virtual void Render(CommandList* cmd_list, Camera const& camera, bool shadows) override;
 
 	void SetInstancedPos(fm::vec3 pos);
 

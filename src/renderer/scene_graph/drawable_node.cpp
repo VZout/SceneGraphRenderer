@@ -20,10 +20,8 @@ void DrawableNode::SetTextures(std::vector<Texture*> textures) {
 }
 
 void DrawableNode::Init() {
-	const_buffer = new ConstantBuffer();
-	shadow_const_buffer = new ConstantBuffer();
-	Create(*const_buffer, *render_system.device, sizeof(CBStruct));
-	Create(*shadow_const_buffer, *render_system.device, sizeof(CBStruct));
+	Create(&const_buffer, render_system.device, sizeof(CBStruct));
+	Create(&shadow_const_buffer, render_system.device, sizeof(CBStruct));
 
 	if (instanced) {
 		render_system.static_inst_needs_staging = true;
@@ -43,31 +41,31 @@ void DrawableNode::Init() {
 	}
 }
 
-void DrawableNode::Render(CommandList& cmd_list, Camera const& camera, bool shadows) {
+void DrawableNode::Render(CommandList* cmd_list, Camera const& camera, bool shadows) {
 	if (instanced) return;
 
-	Bind(cmd_list, graph.GetViewport()); // TODO: This can be optimized when a render pass starts.
+	Bind(*cmd_list, graph.GetViewport()); // TODO: This can be optimized when a render pass starts.
 
 	if (shadows && !cast_shadows)
 		return;
 
 	if (shadows) {
-		Bind(cmd_list, render_system.shadow_viewport);
+		Bind(*cmd_list, render_system.shadow_viewport);
 		render_system.BindPipelineOptimized(cmd_list, pipeline_id + "_shadow");
 		Bind(cmd_list, render_system.shadow_projection_view_const_buffer, 2, render_system.render_window.frame_idx);
-		Bind(cmd_list, *shadow_const_buffer, 0, render_system.render_window.frame_idx);
+		Bind(cmd_list, shadow_const_buffer, 0, render_system.render_window.frame_idx);
 	}
 	else {
 		render_system.BindPipelineOptimized(cmd_list, pipeline_id);
 		Bind(cmd_list, render_system.projection_view_const_buffer, 2, render_system.render_window.frame_idx);
-		Bind(cmd_list, *const_buffer, 0, render_system.render_window.frame_idx);
+		Bind(cmd_list, const_buffer, 0, render_system.render_window.frame_idx);
 	}
 
 	std::vector<ID3D12DescriptorHeap*> heaps = { ta->texture_heap };
-	cmd_list.native->SetDescriptorHeaps(heaps.size(), heaps.data());
+	cmd_list->native->SetDescriptorHeaps(heaps.size(), heaps.data());
 
 	for (size_t i = 0; i < model->meshes.size(); i++) {
-		Bind(cmd_list, *ta, 1); // TODO: Allow multiple texture arrays per object.
+		Bind(*cmd_list, *ta, 1); // TODO: Allow multiple texture arrays per object.
 		BindVertexBuffer(cmd_list, model->meshes[i].vb);
 		BindIndexBuffer(cmd_list, model->meshes[i].ib);
 

@@ -27,7 +27,7 @@ namespace rlr
 		virtual ~Node();
 
 		virtual void Init() = 0;
-		virtual void Render(CommandList& cmd_list, Camera const& camera, bool shadows) = 0;
+		virtual void Render(CommandList* cmd_list, Camera const& camera, bool shadows) = 0;
 		virtual void OnAdded() {}
 
 		void AddChild(std::shared_ptr<Node> node);
@@ -57,7 +57,7 @@ namespace rlr
 		virtual ~RootNode();
 
 		virtual void Init() final;
-		virtual void Render(CommandList& cmd_list, Camera const& camera, bool shadows) final;
+		virtual void Render(CommandList* cmd_list, Camera const& camera, bool shadows) final;
 
 	private:
 		Viewport viewport;
