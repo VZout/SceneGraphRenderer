@@ -5,9 +5,11 @@
 #include "renderer\math\vec.hpp"
 #include "renderer\dx12\dx12_texture.h"
 
-namespace rlr {
+namespace rlr
+{
 
-class DrawableNode : public Node {
+class DrawableNode : public Node
+{
 public:
 	DrawableNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, std::string const& pipeline_id, bool cast_shadows = true, bool instanced = false, int instanced_batch_id = 0);
 	virtual ~DrawableNode();
@@ -20,18 +22,18 @@ public:
 	void SetInstancedPos(fm::vec3 pos);
 
 public:
-	bool m_cast_shadows;
-	bool m_instanced;
+	bool cast_shadows;
+	bool instanced;
 
-	unsigned int m_instanced_batch_id = 0;
-	fm::vec3 m_instanced_pos;
+	unsigned int instanced_batch_id = 0;
+	fm::vec3 instanced_pos;
 
 	std::string material_id;
 	std::string pipeline_id;
-	rlr::Model* model;
-	rlr::TextureArray* ta;
-	rlr::ConstantBuffer* const_buffer;
-	rlr::ConstantBuffer* shadow_const_buffer;
+	Model* model;
+	TextureArray* ta;
+	ConstantBuffer* const_buffer;
+	ConstantBuffer* shadow_const_buffer;
 };
 
-}
+} /* rlr */

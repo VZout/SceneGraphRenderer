@@ -887,7 +887,7 @@ namespace rlr {
 			DirectX::XMMATRIX model = sc * rotMat * tr;
 			DirectX::XMStoreFloat4x4(&cb_data.model, model);
 
-			cb_data.instanced = drawable->m_instanced;
+			cb_data.instanced = drawable->instanced;
 
 			for (size_t i = 0; i < drawable->model->meshes[0].skeleton.bone_mats.size(); i++) {
 				cb_data.weightmatrices[i] = aiMatrix4x4(drawable->model->meshes[0].skeleton.bone_mats[i]);

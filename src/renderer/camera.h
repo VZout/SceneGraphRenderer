@@ -7,21 +7,21 @@
 namespace rlr {
 class Camera {
 protected:
-	float _frustum_near;
-	float _frustum_far;
-	float _fov;
-	float _ratio;
+	float frustum_near;
+	float frustum_far;
+	float fov;
+	float ratio;
 
-	fm::vec _pos;
-	fm::vec _euler;
+	fm::vec pos;
+	fm::vec euler;
 
-	fm::vec _forward;
-	fm::vec _right;
-	fm::vec _up;
-	fm::vec _world_up;
+	fm::vec forward;
+	fm::vec right;
+	fm::vec up;
+	fm::vec world_up;
 
-	DirectX::XMFLOAT4X4 _view;
-	DirectX::XMFLOAT4X4 _projection;
+	DirectX::XMFLOAT4X4 view;
+	DirectX::XMFLOAT4X4 projection;
 
 public:
 	Camera(float aspect_ratio = 16.0f / 9.0f, bool temp = false);
@@ -35,13 +35,13 @@ public:
 	void SetAspectRatio(float ratio);
 	void SetPos(fm::vec pos);
 	void SetEuler(fm::vec euler);
-	float GetFoV();
-	float GetAspectRatio();
-	fm::vec GetPos();
-	fm::vec GetEuler();
-	fm::vec GetForward();
-	DirectX::XMFLOAT4X4 GetViewMat();
-	DirectX::XMFLOAT4X4 GetProjMat();
+	float GetFoV() const;
+	float GetAspectRatio() const;
+	fm::vec GetPos() const;
+	fm::vec GetEuler() const;
+	fm::vec GetForward() const;
+	DirectX::XMFLOAT4X4 GetViewMat() const;
+	DirectX::XMFLOAT4X4 GetProjMat() const;
 	
 };
 

@@ -6,102 +6,107 @@
 #include "renderer\dx12\dx12_texture.h"
 #include "renderer/dx12//dx12_texture_array.h"
 
-Node::Node(SceneGraph& graph, rlr::RenderSystem& render_system, std::string const& name)
-	: m_graph(graph),
-	m_render_system(render_system),
-	m_name(name),
-	m_type_id(0),
-	m_parent(nullptr),
-	m_initialized(false)
+namespace rlr
 {
 
-}
-
-Node::~Node()
-{
-
-}
-
-void Node::AddChild(std::shared_ptr<Node> node)
-{
-	node->m_parent = shared_from_this();
-	m_children.push_back(node);
-}
-
-std::shared_ptr<Node> Node::GetParent() const
-{
-	return m_parent;
-}
-
-std::vector<std::shared_ptr<Node>> Node::GetChildren() const
-{
-	return m_children;
-}
-
-std::string Node::GetName() const {
-	return m_name;
-}
-
-RootNode::RootNode(SceneGraph& graph, rlr::RenderSystem& render_system, std::string const& name, int width, int height)
-	: Node(graph, render_system, name)
-{
-	rlr::Create(this->viewport, width, height);
-}
-
-RootNode::~RootNode()
-{
-	rlr::Destroy(this->viewport);
-}
-
-void RootNode::Init()
-{
-
-}
-
-void RootNode::Render(rlr::CommandList& cmd_list, rlr::Camera const& camera, bool shadows)
-{
-
-}
-
-SceneGraph::SceneGraph(rlr::RenderSystem& render_system, int width, int height) 
-	: m_render_system(render_system),
-	m_diffuse_matrix_transforms(false),
-	root(CreateNode<RootNode>("Root", width, height))
-{
-}
-
-SceneGraph::~SceneGraph()
-{
-}
-
-void SceneGraph::InitAll()
-{
-	using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
-	
-	root->Init();
-
-	recursive_func_t recursive_init = [&recursive_init](std::shared_ptr<Node> node)
+	Node::Node(SceneGraph& graph, RenderSystem& render_system, std::string const& name)
+		: graph(graph),
+		render_system(render_system),
+		name(name),
+		type_id(0),
+		parent(nullptr),
+		initialized(false)
 	{
-		for (auto child : node->m_children)
+
+	}
+
+	Node::~Node()
+	{
+
+	}
+
+	void Node::AddChild(std::shared_ptr<Node> node)
+	{
+		node->parent = shared_from_this();
+		children.push_back(node);
+	}
+
+	std::shared_ptr<Node> Node::GetParent() const
+	{
+		return parent;
+	}
+
+	std::vector<std::shared_ptr<Node>> Node::GetChildren() const
+	{
+		return children;
+	}
+
+	std::string Node::GetName() const {
+		return name;
+	}
+
+	RootNode::RootNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, int width, int height)
+		: Node(graph, render_system, name)
+	{
+		Create(this->viewport, width, height);
+	}
+
+	RootNode::~RootNode()
+	{
+		Destroy(this->viewport);
+	}
+
+	void RootNode::Init()
+	{
+
+	}
+
+	void RootNode::Render(CommandList& cmd_list, Camera const& camera, bool shadows)
+	{
+
+	}
+
+	SceneGraph::SceneGraph(RenderSystem& render_system, int width, int height)
+		: m_render_system(render_system),
+		m_diffuse_matrix_transforms(false),
+		root(CreateNode<RootNode>("Root", width, height))
+	{
+	}
+
+	SceneGraph::~SceneGraph()
+	{
+	}
+
+	void SceneGraph::InitAll()
+	{
+		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
+
+		root->Init();
+
+		recursive_func_t recursive_init = [&recursive_init](std::shared_ptr<Node> node)
+		{
+			for (auto child : node->children)
+			{
+				child->Init();
+				recursive_init(child);
+			}
+		};
+
+		for (auto child : root->children)
 		{
 			child->Init();
 			recursive_init(child);
 		}
-	};
-
-	for (auto child : root->m_children)
-	{
-		child->Init();
-		recursive_init(child);
 	}
-}
 
-rlr::Viewport SceneGraph::GetViewport() const
-{
-	return std::static_pointer_cast<RootNode>(root)->viewport;
-}
+	Viewport SceneGraph::GetViewport() const
+	{
+		return std::static_pointer_cast<RootNode>(root)->viewport;
+	}
 
-void SceneGraph::ResizeViewport(int width, int height)
-{
-	rlr::Create(std::static_pointer_cast<RootNode>(root)->viewport, width, height);
-}
+	void SceneGraph::ResizeViewport(int width, int height)
+	{
+		Create(std::static_pointer_cast<RootNode>(root)->viewport, width, height);
+	}
+
+} /* rlr */

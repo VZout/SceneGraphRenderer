@@ -7,7 +7,7 @@
 #include <d3d12.h>
 
 rlr::Window* window = nullptr;
-SceneGraph* graph = nullptr;
+rlr::SceneGraph* graph = nullptr;
 rlr::RenderSystem* render_system = nullptr;
 std::shared_ptr<rlr::DrawableNode> dr0;
 std::shared_ptr<rlr::DrawableNode> dr1;
@@ -134,7 +134,7 @@ int main()
 	render_system = new rlr::RenderSystem(*window);
 	render_system->Setup();
 
-	graph = new SceneGraph(*render_system, 1280, 720);
+	graph = new rlr::SceneGraph(*render_system, 1280, 720);
 
 	dr0 = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Cow", "basic");
 	dr1 = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Dancing Human", "anim");
@@ -179,7 +179,7 @@ int main()
 	left_wall->SetTextures(metal_textures);
 	dr1->SetTextures(wall_textures);
 
-	dr0->m_cast_shadows = true;
+	dr0->cast_shadows = true;
 
 	for (auto i = 0; i < num_floors; i++) {
 		auto floor = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Instanced floor piece", "basic", false, true, 0);
