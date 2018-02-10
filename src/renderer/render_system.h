@@ -8,8 +8,6 @@
 #include "profiler.h"
 #include "imgui\imgui.h"
 #include "camera.h"
-#define MATH_UTIL_USE_FMATH
-#include "math/math_util.hpp"
 
 #include <memory>
 #include <d3d12.h>

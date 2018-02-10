@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <random>
 #include <d3d12.h>
 #ifdef _DEBUG
 #define INITGUID

@@ -1,7 +1,5 @@
 #include "bone.h"
 
-#define MATH_UTIL_USE_FMATH
-#include "math/math_util.hpp"
 #include "model.h"
 
 

@@ -4,45 +4,48 @@
 
 #include <DirectXMath.h>
 
-namespace rlr {
-class Camera {
-protected:
-	float frustum_near;
-	float frustum_far;
-	float fov;
-	float ratio;
+namespace rlr
+{
 
-	fm::vec pos;
-	fm::vec euler;
+	class Camera
+	{
+	protected:
+		float frustum_near;
+		float frustum_far;
+		float fov;
+		float ratio;
 
-	fm::vec forward;
-	fm::vec right;
-	fm::vec up;
-	fm::vec world_up;
+		fm::vec pos;
+		fm::vec euler;
 
-	DirectX::XMFLOAT4X4 view;
-	DirectX::XMFLOAT4X4 projection;
+		fm::vec forward;
+		fm::vec right;
+		fm::vec up;
+		fm::vec world_up;
 
-public:
-	Camera(float aspect_ratio = 16.0f / 9.0f, bool temp = false);
-    virtual ~Camera();
+		DirectX::XMFLOAT4X4 view;
+		DirectX::XMFLOAT4X4 projection;
 
-	void SetPerspective();
-	void SetOrthographic(float width, float height);
-    void Update();
+	public:
+		Camera(float aspect_ratio = 16.0f / 9.0f, bool temp = false);
+		virtual ~Camera();
 
-	void SetFoV(float fov);
-	void SetAspectRatio(float ratio);
-	void SetPos(fm::vec pos);
-	void SetEuler(fm::vec euler);
-	float GetFoV() const;
-	float GetAspectRatio() const;
-	fm::vec GetPos() const;
-	fm::vec GetEuler() const;
-	fm::vec GetForward() const;
-	DirectX::XMFLOAT4X4 GetViewMat() const;
-	DirectX::XMFLOAT4X4 GetProjMat() const;
+		void SetPerspective();
+		void SetOrthographic(float width, float height);
+		void Update();
+
+		void SetFoV(float fov);
+		void SetAspectRatio(float ratio);
+		void SetPos(fm::vec pos);
+		void SetEuler(fm::vec euler);
+		float GetFoV() const;
+		float GetAspectRatio() const;
+		fm::vec GetPos() const;
+		fm::vec GetEuler() const;
+		fm::vec GetForward() const;
+		DirectX::XMFLOAT4X4 GetViewMat() const;
+		DirectX::XMFLOAT4X4 GetProjMat() const;
 	
-};
+	};
 
 } /* rlr*/
