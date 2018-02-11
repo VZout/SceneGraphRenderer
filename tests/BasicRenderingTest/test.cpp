@@ -177,7 +177,6 @@ int main()
 	left_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Left Wall", "basic");
 	right_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Right Wall", "basic");
 
-
 	rlr::Load(&spot_albedo, "resources/tests/spot.png");
 	rlr::Load(&spot_spec, "resources/tests/spot_specular.png");
 	rlr::Load(&spot_metal, "resources/tests/spot_metal.png");
