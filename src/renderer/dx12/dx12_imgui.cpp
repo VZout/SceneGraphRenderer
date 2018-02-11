@@ -7,7 +7,7 @@
 // https://github.com/ocornut/imgui
 
 #include "../imgui/imgui.h"
-#include "imgui_impl_dx12.h"
+#include "dx12_imgui.h"
 
 #include "../interface.h"
 

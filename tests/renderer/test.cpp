@@ -2,9 +2,11 @@
 #include <renderer/window.h>
 
 #include <renderer\imgui\imgui.h>
-#include <renderer/animation_manager.h>
 #include <renderer/enums.h>
 #include <d3d12.h>
+#include <fstream>
+
+#include <renderer\imgui\text_editor.h>
 
 rlr::Window* window = nullptr;
 rlr::SceneGraph* graph = nullptr;
@@ -22,10 +24,13 @@ rlr::Texture* wall_texture_specular = nullptr;
 rlr::Texture* wall_texture_normal = nullptr;
 rlr::Model* floor_model = nullptr;
 
+static TextEditor editor;
+auto lang = TextEditor::LanguageDefinition::HLSL();
+
 static int num_floors = 1;
 
 bool first = true;
-bool opened = true;
+static bool opened = true;
 bool show_engine = true;
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame;
@@ -49,10 +54,36 @@ void ImGui_Render() {
 	render_system->ImGui_RenderHardwareDetails(first, false, ImGui::DockStyle::TOP);
 	render_system->ImGui_RenderPostProcessingSettings(first, true, ImGui::DockStyle::CENTER);
 	render_system->ImGui_RenderRenderGraph(first, true, ImGui::DockStyle::CENTER, graph);
+
+	if (ImGui::BeginDock("Shader Editor", &opened)) {
+		if (ImGui::Button("Save"))
+			editor.SetPalette(TextEditor::GetDarkPalette());
+
+		ImGui::SameLine();
+
+		auto cpos = editor.GetCursorPosition();
+		
+		ImVec4 color;
+		if (editor.CanUndo()) {
+			color = ImVec4(1, 0.4, 0.4, 1);
+		}
+		else {
+			color = ImVec4(1, 1, 1, 1);
+		}
+		ImGui::TextColored(color, "%d/%d (%d lines) | %s | %s | %s%s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
+			editor.IsOverwrite() ? "Ovr" : "Ins",
+			editor.GetLanguageDefinition().mName.c_str(),
+			"compo_pixel.hlsl",
+			editor.CanUndo() ? "*" : "");
+		editor.Render("TextEditor");
+	}
+	if (first) ImGui::LetsDock(true, ImGui::DockStyle::CENTER);
+	ImGui::EndDock();
+
 	render_system->ImGui_RenderGameView(first, true, ImGui::DockStyle::RIGHT);
 	render_system->ImGui_RenderLightProperties(first, false, ImGui::DockStyle::BOTTOM);
-	render_system->ImGui_RenderCameraProperties(first);
 	render_system->ImGui_RenderProfiler(first);
+	render_system->ImGui_RenderCameraProperties(first);
 
 	first = false;
 }
@@ -81,26 +112,30 @@ void RegisterPipelines() {
 	Load(&anim_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/tests/anim_vertex.hlsl");
 	Load(&anim_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/tests/anim_pixel.hlsl");
 
-	rlr::PipelineState* ps = new rlr::PipelineState();
-	rlr::SetVertexShader(*ps, vertex_shader);
-	rlr::SetFragmentShader(*ps, pixel_shader);
-	rlr::SetRootSignature(*ps, rs);
+	rlr::PipelineState* ps;
+	rlr::Create(&ps);
+	rlr::SetVertexShader(ps, vertex_shader);
+	rlr::SetFragmentShader(ps, pixel_shader);
+	rlr::SetRootSignature(ps, rs);
 
-	rlr::PipelineState* sps = new rlr::PipelineState();
-	rlr::SetVertexShader(*sps, vertex_shader);
-	rlr::SetFragmentShader(*sps, pixel_shader);
-	rlr::SetRootSignature(*sps, rs);
+	rlr::PipelineState* sps;
+	rlr::Create(&sps);
+	rlr::SetVertexShader(sps, vertex_shader);
+	rlr::SetFragmentShader(sps, pixel_shader);
+	rlr::SetRootSignature(sps, rs);
 	sps->temp = true;
 
-	rlr::PipelineState* anim = new rlr::PipelineState();
-	rlr::SetVertexShader(*anim, anim_vertex_shader);
-	rlr::SetFragmentShader(*anim, anim_pixel_shader);
-	rlr::SetRootSignature(*anim, rs);
+	rlr::PipelineState* anim;
+	rlr::Create(&anim);
+	rlr::SetVertexShader(anim, anim_vertex_shader);
+	rlr::SetFragmentShader(anim, anim_pixel_shader);
+	rlr::SetRootSignature(anim, rs);
 
-	rlr::PipelineState* sanim = new rlr::PipelineState();
-	rlr::SetVertexShader(*sanim, anim_vertex_shader);
-	rlr::SetFragmentShader(*sanim, anim_pixel_shader);
-	rlr::SetRootSignature(*sanim, rs);
+	rlr::PipelineState* sanim;
+	rlr::Create(&sanim);
+	rlr::SetVertexShader(sanim, anim_vertex_shader);
+	rlr::SetFragmentShader(sanim, anim_pixel_shader);
+	rlr::SetRootSignature(sanim, rs);
 	sanim->temp = true;
 
 	render_system->RegisterPipeline("basic", ps);
@@ -110,12 +145,12 @@ void RegisterPipelines() {
 }
 
 void Staging(rlr::Device* device, rlr::CommandList* cmd_list) {
-	Stage(*spot_albedo, device, cmd_list);
-	Stage(*spot_spec, device, cmd_list);
-	Stage(*spot_metal, device, cmd_list);
-	Stage(*wall_texture, device, cmd_list);
-	Stage(*wall_texture_specular, device, cmd_list);
-	Stage(*wall_texture_normal, device, cmd_list);
+	Stage(spot_albedo, device, cmd_list);
+	Stage(spot_spec, device, cmd_list);
+	Stage(spot_metal, device, cmd_list);
+	Stage(wall_texture, device, cmd_list);
+	Stage(wall_texture_specular, device, cmd_list);
+	Stage(wall_texture_normal, device, cmd_list);
 	Stage(*dr0->model, device, cmd_list);
 	Stage(*floor_model, device, cmd_list); 
 	Stage(*dr1->model, device, cmd_list);
@@ -142,12 +177,13 @@ int main()
 	left_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Left Wall", "basic");
 	right_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Right Wall", "basic");
 
-	rlr::Load(*(spot_albedo			   = new rlr::Texture()), "resources/tests/spot.png");
-	rlr::Load(*(spot_spec			   = new rlr::Texture()), "resources/tests/spot_specular.png");
-	rlr::Load(*(spot_metal             = new rlr::Texture()), "resources/tests/spot_metal.png");
-	rlr::Load(*(wall_texture           = new rlr::Texture()), "resources/tests/agedplanks1-albedo.png");
-	rlr::Load(*(wall_texture_specular  = new rlr::Texture()), "resources/tests/agedplanks1-roughness.png");
-	rlr::Load(*(wall_texture_normal    = new rlr::Texture()), "resources/tests/agedplanks1-normal4-ue.png");
+
+	rlr::Load(&spot_albedo, "resources/tests/spot.png");
+	rlr::Load(&spot_spec, "resources/tests/spot_specular.png");
+	rlr::Load(&spot_metal, "resources/tests/spot_metal.png");
+	rlr::Load(&wall_texture, "resources/tests/agedplanks1-albedo.png");
+	rlr::Load(&wall_texture_specular, "resources/tests/agedplanks1-roughness.png");
+	rlr::Load(&wall_texture_normal, "resources/tests/agedplanks1-normal4-ue.png");
 
 	floor_model = new rlr::Model();
 	rlr::Load(*floor_model, "resources/tests/floor.fbx");
@@ -199,6 +235,16 @@ int main()
 	dr1->model->meshes[0].skeleton.PlayAnimation(dr1->model->animations[0]);
 
 	last_frame = std::chrono::high_resolution_clock::now();
+
+	{
+		editor.SetLanguageDefinition(lang);
+		std::ifstream t("resources/engine/shaders/compo_pixel.hlsl");
+		if (t.good())
+		{
+			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+			editor.SetText(str);
+		}
+	}
 
 	bool first = true;
 

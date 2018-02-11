@@ -67,7 +67,7 @@ public:
 
 	rlu::ThreadPool* thread_pool;
 
-	Texture sky_texture;
+	Texture* sky_texture;
 
 	/*
 	GBuffer 0
@@ -88,7 +88,7 @@ public:
 	/*
 	deferred hdr
 	deferred overdose
-	overdosed blur
+	overdosed blur (deferred overdose after being blurred)
 	*/
 	DescriptorHeap* srv_descriptor_heap_2;
 	RootSignature* root_signature_2;
@@ -103,33 +103,32 @@ public:
 	ConstantBuffer* shadow_projection_view_const_buffer;
 
 	// SSAO Rendering
-	PipelineState ssao_ps;
+	PipelineState* ssao_ps;
 	rlr::Shader* ssao_pixel_shader;
 	rlr::Shader* ssao_vertex_shader;
 	ConstantBuffer* ssao_const_buffer;
-	rlr::Texture ssao_texture;
+	rlr::Texture* ssao_texture;
 
 	// SSAO BLUR Rendering
-	PipelineState blur_ssao_ps;
+	PipelineState* blur_ssao_ps;
 	rlr::Shader* blur_ssao_pixel_shader;
 	rlr::Shader* blur_ssao_vertex_shader;
 	ConstantBuffer* blur_ssao_const_buffer;
-	rlr::Texture blur_ssao_texture;
 
 	// Deferred Rendering
 	CommandList* deferred_cmd_list;
 	StagingBuffer* quad_vb;
-	PipelineState deferred_ps;
-	PipelineState blur_ps;
-	PipelineState final_composition_ps;
+	PipelineState* deferred_ps;
+	PipelineState* blur_ps;
+	PipelineState* final_composition_ps;
 	rlr::Shader* deferred_pixel_shader;
 	rlr::Shader* deferred_vertex_shader;
 	rlr::Shader* composition_pixel_shader;
 	rlr::Shader* composition_vertex_shader;
 	rlr::Shader* blur_pixel_shader;
 	rlr::Shader* blur_vertex_shader;
-	ConstantBuffer* deferred_const_buffer;
 
+	ConstantBuffer* deferred_const_buffer;
 	ConstantBuffer* compo_const_buffer;
 
 	RenderTarget game_render_target;
@@ -161,7 +160,7 @@ public:
 	std::chrono::time_point<std::chrono::high_resolution_clock> prev;
 
 	void Populate_InstancedDrawables(CommandList* cmd_list, Camera const& camera);
-	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer* cb, DescriptorHeap* srv_heap, Viewport viewport);
+	void Populate_FullscreenQuad(CommandList& cmd_list, PipelineState* pipeline, ConstantBuffer* cb, DescriptorHeap* srv_heap, Viewport viewport);
 
 	void BindPipelineOptimized(CommandList* cmd_list, std::string const& id);
 	void SetupSwapchain(int width, int height);
@@ -205,6 +204,7 @@ private:
 	float imgui_exposure = 1;
 	float imgui_gamma = 1;
 	float imgui_contrast = 1;
+	float imgui_chroma = 0;
 	bool imgui_bloom = true;
 
 	bool imgui_profiler_align = true;

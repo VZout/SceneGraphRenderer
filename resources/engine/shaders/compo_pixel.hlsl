@@ -153,14 +153,36 @@ cbuffer ConstantBuffer : register(b0)
 	float exposure;
 	float gamma;
 	float contrast;
+	float chroma;
 	int tonemapping;
 	int use_bloom;
 };
 
+float4 ChromaticAberration(Texture2D tex, float2 uv) {
+	float strength = chroma;
+	float2 r_offset = float2(strength, 0);
+	float2 g_offset = float2(-strength, 0);
+	float2 b_offset = float2(0, 0);
+
+	float4 r = float4(1, 1, 1, 1);
+	r.x = tex.Sample(s0, uv + r_offset).x;
+	r.y = tex.Sample(s0, uv + g_offset).y;
+	r.z = tex.Sample(s0, uv + b_offset).z;
+	r.a = tex.Sample(s0, uv).a;
+
+	return r;
+}
+
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
 	float4 bloom = overdose_texture.Sample(s0, input.texCoord);
-	float4 hdr = deferred_texture.Sample(s0, input.texCoord);
+
+	float4 hdr;
+	if (use_bloom) {
+		hdr = ChromaticAberration(deferred_texture, input.texCoord);
+	} else {
+		hdr = deferred_texture.Sample(s0, input.texCoord);
+	}
 
 	float3 result = hdr;
 

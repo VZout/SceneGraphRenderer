@@ -10,7 +10,7 @@
 #include <DirectXMath.h>
 #endif
 
-#include "dx12\imgui_impl_dx12.h"
+#include "dx12\dx12_imgui.h"
 #include "dx12\d3dx12.h"
 #include "vertex.h"
 #include "model.h"
@@ -71,7 +71,7 @@ namespace rlr {
 #ifdef REDUCE_PIPELINE_STATE_CHANGES
 	PipelineState* ps = GetPipeline(id); \
 	if (ps != last_pipeline_state) { \
-		Bind(*cmd_list, *ps); \
+		Bind(*cmd_list, ps); \
 		last_pipeline_state = ps; \
 		num_pipeline_changes++; \
 	}
@@ -152,24 +152,24 @@ namespace rlr {
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC noise_texture_view_desc = {};
 			noise_texture_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			noise_texture_view_desc.Format = ssao_texture.desc.Format;
+			noise_texture_view_desc.Format = ssao_texture->desc.Format;
 			noise_texture_view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			noise_texture_view_desc.Texture2D.MipLevels = 1;
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC sky_texture_view_desc = {};
 			sky_texture_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			sky_texture_view_desc.Format = sky_texture.desc.Format;
+			sky_texture_view_desc.Format = sky_texture->desc.Format;
 			sky_texture_view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			sky_texture_view_desc.TextureCube.MipLevels = sky_texture.desc.MipLevels;
+			sky_texture_view_desc.TextureCube.MipLevels = sky_texture->desc.MipLevels;
 			sky_texture_view_desc.TextureCube.ResourceMinLODClamp = 0;
 
 			DescHeapCPUHandle handle = GetCPUHandle(srv_descriptor_heap_0);
 			/* 0-2 */CreateSRVFromRTV(game_render_target, *device, handle, game_render_target.create_info.num_rtv_formats, game_render_target.create_info.rtv_formats);
 			/* 3   */CreateSRVFromDSV(shadow_render_target, *device, handle);
-			/* 4   */device->native->CreateShaderResourceView(ssao_texture.resource, &noise_texture_view_desc, handle.native);
+			/* 4   */device->native->CreateShaderResourceView(ssao_texture->resource, &noise_texture_view_desc, handle.native);
 			Offset(handle, 1, srv_descriptor_heap_0->increment_size);
 			/* 5   */CreateSRVFromRTV(blur_ssao_render_target, *device, handle, blur_ssao_render_target.create_info.num_rtv_formats, blur_ssao_render_target.create_info.rtv_formats);
-			/* 6   */device->native->CreateShaderResourceView(sky_texture.resource, &sky_texture_view_desc, handle.native);
+			/* 6   */device->native->CreateShaderResourceView(sky_texture->resource, &sky_texture_view_desc, handle.native);
 			Offset(handle, 1, srv_descriptor_heap_0->increment_size);
 		}
 		// ### Descriptor Heap 1 ###
@@ -297,19 +297,19 @@ namespace rlr {
 
 		SetupSwapchain(width, height);
 
-		Allocate(&main_cmd_list, *device, 3);
+		Allocate(&main_cmd_list, device, 3);
 		SetName(main_cmd_list, L"Main Command List");
 
-		Allocate(&imgui_cmd_list, *device, 3);
+		Allocate(&imgui_cmd_list, device, 3);
 		SetName(imgui_cmd_list, L"ImGui cmd list");
 
-		Allocate(&shadow_cmd_list, *device, 3);
+		Allocate(&shadow_cmd_list, device, 3);
 		SetName(shadow_cmd_list, L"shadow cmd list");
 
-		Allocate(&deferred_cmd_list, *device, 3);
+		Allocate(&deferred_cmd_list, device, 3);
 		SetName(deferred_cmd_list, L"deferred cmd list");
 
-		Allocate(&ssao_cmd_list, *device, 3);
+		Allocate(&ssao_cmd_list, device, 3);
 		SetName(ssao_cmd_list, L"ssao cmd list");
 
 		Create(shadow_viewport, SHADOW_SIZE, SHADOW_SIZE);
@@ -375,10 +375,11 @@ namespace rlr {
 		deferred_pso_info.rtv_formats[0] = Format::R16G16B16A16_UNORM;
 		deferred_pso_info.rtv_formats[1] = Format::R16G16B16A16_UNORM;
 
+		rlr::Create(&deferred_ps);
 		rlr::SetVertexShader(deferred_ps, deferred_vertex_shader);
 		rlr::SetFragmentShader(deferred_ps, deferred_pixel_shader);
 		rlr::SetRootSignature(deferred_ps, root_signature_0);
-		rlr::Finalize(deferred_ps, *device, render_window, deferred_pso_info);
+		rlr::Finalize(deferred_ps, device, &render_window, deferred_pso_info);
 
 		/*# BLURRY BLURRY #*/
 		Load(&blur_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/blur_vertex.hlsl");
@@ -389,10 +390,11 @@ namespace rlr {
 		blur_pso_info.num_rtv_formats = 1;
 		blur_pso_info.rtv_formats[0] = Format::R16G16B16A16_UNORM;
 
+		rlr::Create(&blur_ps);
 		rlr::SetVertexShader(blur_ps, blur_vertex_shader);
 		rlr::SetFragmentShader(blur_ps, blur_pixel_shader);
 		rlr::SetRootSignature(blur_ps, root_signature_2);
-		rlr::Finalize(blur_ps, *device, render_window, blur_pso_info);
+		rlr::Finalize(blur_ps, device, &render_window, blur_pso_info);
 
 		/*# FINAL COMPOSITION #*/
 		Load(&composition_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/compo_vertex.hlsl");
@@ -403,10 +405,11 @@ namespace rlr {
 		composition_pso_info.num_rtv_formats = 1;
 		composition_pso_info.rtv_formats[0] = Format::R8G8B8A8_UNORM;
 
+		rlr::Create(&final_composition_ps);
 		rlr::SetVertexShader(final_composition_ps, composition_vertex_shader);
 		rlr::SetFragmentShader(final_composition_ps, composition_pixel_shader);
 		rlr::SetRootSignature(final_composition_ps, root_signature_2);
-		rlr::Finalize(final_composition_ps, *device, render_window, composition_pso_info);
+		rlr::Finalize(final_composition_ps, device, &render_window, composition_pso_info);
 
 		/*# SCREEN SPACE AMBIENT OCCLUSION #*/
 
@@ -418,18 +421,20 @@ namespace rlr {
 		ssao_pso_info.num_rtv_formats = 1;
 		ssao_pso_info.rtv_formats[0] = Format::R8_UNORM;
 
+		rlr::Create(&ssao_ps);
 		rlr::SetVertexShader(ssao_ps, ssao_vertex_shader);
 		rlr::SetFragmentShader(ssao_ps, ssao_pixel_shader);
 		rlr::SetRootSignature(ssao_ps, root_signature_0);
-		rlr::Finalize(ssao_ps, *device, render_window, ssao_pso_info);
+		rlr::Finalize(ssao_ps, device, &render_window, ssao_pso_info);
 
 		Load(&blur_ssao_vertex_shader, rlr::ShaderType::VERTEX_SHADER, "resources/engine/shaders/ssao_vertex.hlsl");
 		Load(&blur_ssao_pixel_shader, rlr::ShaderType::PIXEL_SHADER, "resources/engine/shaders/ssao_blur_pixel.hlsl");
 
+		rlr::Create(&blur_ssao_ps);
 		rlr::SetVertexShader(blur_ssao_ps, blur_ssao_vertex_shader);
 		rlr::SetFragmentShader(blur_ssao_ps, blur_ssao_pixel_shader);
 		rlr::SetRootSignature(blur_ssao_ps, root_signature_1);
-		rlr::Finalize(blur_ssao_ps, *device, render_window, ssao_pso_info);
+		rlr::Finalize(blur_ssao_ps, device, &render_window, ssao_pso_info);
 
 		Begin(*main_cmd_list, render_window.frame_idx);
 
@@ -443,8 +448,8 @@ namespace rlr {
 		Create(&quad_vb, device, vertices, 4 * sizeof(Vertex), sizeof(Vertex), ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 		StageBuffer(quad_vb, main_cmd_list);
 
-		rlr::Load(ssao_texture, "resources/engine/textures/ssao.png");
-		rlr::Load(sky_texture, "resources/tests/sky.dds");
+		rlr::Load(&ssao_texture, "resources/engine/textures/ssao.png");
+		rlr::Load(&sky_texture, "resources/tests/sky.dds");
 
 		Stage(ssao_texture, device, main_cmd_list); 
 		Stage(sky_texture, device, main_cmd_list, true);
@@ -759,7 +764,7 @@ namespace rlr {
 	*	This function requires a render target to be bound BEFORE being called.
 	*	The render target is NOT being cleared.
 	*/
-	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState& pipeline, ConstantBuffer* cb, DescriptorHeap* srv_heap, Viewport viewport) {
+	void RenderSystem::Populate_FullscreenQuad(CommandList& cmd_list, PipelineState* pipeline, ConstantBuffer* cb, DescriptorHeap* srv_heap, Viewport viewport) {
 		Bind(cmd_list, pipeline);
 		SetPrimitiveTopology(cmd_list, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 		Bind(cmd_list, viewport);
@@ -819,7 +824,7 @@ namespace rlr {
 		create_info.rtv_formats[2] = Format::R16G16B16A16_FLOAT; // position
 
 		Finalize(ps->root_signature, device);
-		Finalize(*ps, *device, render_window, create_info);
+		Finalize(ps, device, &render_window, create_info);
 	}
 
 	void RenderSystem::UnregisterPipeline(std::string id) {
@@ -835,7 +840,7 @@ namespace rlr {
 	void RenderSystem::ClearAllPipelines() {
 		std::map<std::string, PipelineState*>::iterator it;
 		for (it = registerd_pipelines.begin(); it != registerd_pipelines.end(); it++)
-			Destroy(*it->second);
+			Destroy(it->second);
 
 		registerd_pipelines.clear();
 	}
@@ -886,6 +891,7 @@ namespace rlr {
 			cb_data.gamma = imgui_gamma;
 			cb_data.exposure = imgui_exposure;
 			cb_data.contrast = imgui_contrast;
+			cb_data.chroma = imgui_chroma;
 			cb_data.bloom = imgui_bloom;
 
 			Update(compo_const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);

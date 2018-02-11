@@ -82,7 +82,7 @@ void Present(RenderWindow& render_window, CommandQueue& cmd_queue, Device& devic
 void Destroy(RenderWindow& render_window);
 
 // CommandList
-void Allocate(CommandList** cmd_list, Device& device, unsigned int num = 1);
+void Allocate(CommandList** cmd_list, Device* device, unsigned int num = 1);
 void SetName(CommandList* cmd_list, std::string const& name);
 void SetName(CommandList* cmd_list, std::wstring const& name);
 void Begin(CommandList& cmd_list, unsigned int frame_idx);
@@ -90,7 +90,7 @@ void End(CommandList& cmd_list);
 void Bind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx, bool clear = true, bool deferred = false, bool temp_compo = false);
 void SBind(CommandList& cmd_list, RenderTarget& render_target, unsigned int frame_idx);
 void Bind(CommandList& cmd_list, Viewport& viewport);
-void Bind(CommandList& cmd_list, PipelineState& pipeline_state);
+void Bind(CommandList& cmd_list, PipelineState* pipeline_state);
 void SetPrimitiveTopology(CommandList& cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology);
 void Bind(CommandList* cmd_list, ConstantBuffer* buffer, unsigned int root_parameter_idx, unsigned int frame_idx);
 void Bind(CommandList& cmd_list, TextureArray& ta, unsigned int root_param_index);
@@ -117,11 +117,12 @@ struct PipelineStateCreateInfo {
 	unsigned int num_rtv_formats;
 };
 
-void SetVertexShader(PipelineState& pipeline_state, Shader* shader);
-void SetFragmentShader(PipelineState& pipeline_state, Shader* shader);
-void SetRootSignature(PipelineState& pipeline_state, RootSignature* root_signature);
-void Finalize(PipelineState& pipeline_state, Device& device, RenderWindow& render_window, PipelineStateCreateInfo create_info); //FIXME: RENDER WINDOW IS NOT NEEDED
-void Destroy(PipelineState& pipeline_state);
+void Create(PipelineState** pipeline_state);
+void SetVertexShader(PipelineState* pipeline_state, Shader* shader);
+void SetFragmentShader(PipelineState* pipeline_state, Shader* shader);
+void SetRootSignature(PipelineState* pipeline_state, RootSignature* root_signature);
+void Finalize(PipelineState* pipeline_state, Device* device, RenderWindow* render_window, PipelineStateCreateInfo create_info); //FIXME: RENDER WINDOW IS NOT NEEDED
+void Destroy(PipelineState* pipeline_state);
 
 // RootSignature
 struct SamplerInfo {
@@ -144,13 +145,13 @@ void Load(Shader** shader, ShaderType type, std::string const & path);
 void Destroy(Shader* shader);
 
 // Texture
-void Load(Texture& texture, std::string const & path);
-void Stage(Texture& texture, Device* device, CommandList* cmd_list, bool dds = false);
-void Destroy(Texture& texture);
+void Load(Texture** texture, std::string const & path);
+void Stage(Texture* texture, Device* device, CommandList* cmd_list, bool dds = false);
+void Destroy(Texture* texture);
 
 // TextureArray
-void Create(TextureArray& ta, Device& device, std::vector<Texture*> textures);
-void Destroy(TextureArray& ta);
+void Create(TextureArray** ta, Device* device, std::vector<Texture*> textures);
+void Destroy(TextureArray* ta);
 
 // Viewport
 void Create(Viewport& viewport, int width, int height);

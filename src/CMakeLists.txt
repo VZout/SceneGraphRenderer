@@ -32,11 +32,11 @@ elseif (USE_VULKAN)
 	file(GLOB_RECURSE API_HEADERS "renderer/vk/*.h")
 endif()
 
-add_library(RLRenderer ${SOURCES} ${HEADERS} ${API_HEADERS} ${API_SOURCES} ${IMGUI_SOURCES} ${IMGUI_INL} ${IMGUI_HEADERS} ${CG_SOURCES} ${CG_HEADERS} ${MATH_SOURCES} ${MATH_HEADERS})
+add_library(RLRenderer ${SOURCES} ${HEADERS} ${API_SOURCES} ${API_HEADERS} ${IMGUI_SOURCES} ${IMGUI_INL} ${IMGUI_HEADERS} ${CG_SOURCES} ${CG_HEADERS} ${MATH_SOURCES} ${MATH_HEADERS})
 
-source_group("Generic"      FILES ${SOURCES} ${HEADERS})
+source_group("Generic"      FILES ${SOURCES} ${HEADERS} ${CG_HEADERS} ${CG_SOURCES})
 source_group("API Impl"     FILES ${API_HEADERS} ${API_SOURCES})
-source_group("ImGui"        FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
+source_group("ImGui"        FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS} ${IMGUI_INL})
 
 if (USE_D3D12)
 	target_link_libraries(RLRenderer dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)

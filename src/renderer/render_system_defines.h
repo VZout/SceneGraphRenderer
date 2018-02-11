@@ -35,6 +35,7 @@ struct CBCompo
 	float exposure;
 	float gamma;
 	float contrast;
+	float chroma;
 	int tonemapping = 0;
 	int bloom;
 };

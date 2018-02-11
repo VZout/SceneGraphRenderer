@@ -12,7 +12,6 @@ void Create(StagingBuffer** buffer, Device* device, void* data, uint64_t size, u
 
 	new_buffer->target_resource_state = resource_state;
 	new_buffer->size = size;
-
 	new_buffer->stride_in_bytes = stride;
 
 	device->native->CreateCommittedResource(

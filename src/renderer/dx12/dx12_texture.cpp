@@ -237,21 +237,25 @@ int LoadImageDataFromMemory(BYTE** data, uint8_t* buffer, unsigned int size, D3D
 
 #include "d3dx12.h"
 
-void Load(Texture& texture, std::string const & path) {
+void Load(Texture** texture, std::string const & path) {
+	auto* new_texture = new Texture();
+
 	std::ifstream fin(path.c_str(), std::ios::in | std::ios::binary);
 
 	fin.seekg(0, fin.end);
 	int size = fin.tellg();
 	fin.seekg(0, fin.beg);
 
-	texture.buffer = (char*)malloc(size);
-	texture.size = size;
-	fin.read(texture.buffer, size);
+	new_texture->buffer = (char*)malloc(size);
+	new_texture->size = size;
+	fin.read(new_texture->buffer, size);
 
-	LoadImageDataFromMemory(&texture.data, (uint8_t*)texture.buffer, texture.size, texture.desc, texture.bytes_per_row);
+	LoadImageDataFromMemory(&new_texture->data, (uint8_t*)new_texture->buffer, new_texture->size, new_texture->desc, new_texture->bytes_per_row);
+
+	(*texture) = new_texture;
 }
 
-void Stage(Texture& texture, Device* device, CommandList* cmd_list, bool dds) {
+void Stage(Texture* texture, Device* device, CommandList* cmd_list, bool dds) {
 	ID3D12Device* n_device = device->native;
 	ID3D12GraphicsCommandList* n_cmd_list = cmd_list->native;
 
@@ -259,14 +263,14 @@ void Stage(Texture& texture, Device* device, CommandList* cmd_list, bool dds) {
 		HRESULT hr = n_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,
-			&texture.desc,
+			&texture->desc,
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			nullptr,
-			IID_PPV_ARGS(&texture.resource));
-		texture.resource->SetName(L"Default texture heap");
+			IID_PPV_ARGS(&texture->resource));
+		texture->resource->SetName(L"Default texture heap");
 
 		UINT64 textureUploadBufferSize;
-		n_device->GetCopyableFootprints(&texture.desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
+		n_device->GetCopyableFootprints(&texture->desc, 0, 1, 0, nullptr, nullptr, nullptr, &textureUploadBufferSize);
 
 		hr = n_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -274,33 +278,33 @@ void Stage(Texture& texture, Device* device, CommandList* cmd_list, bool dds) {
 			&CD3DX12_RESOURCE_DESC::Buffer(textureUploadBufferSize),
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&texture.staging_resource));
-		texture.staging_resource->SetName(L"Upload texture heap");
+			IID_PPV_ARGS(&texture->staging_resource));
+		texture->staging_resource->SetName(L"Upload texture heap");
 
 		D3D12_SUBRESOURCE_DATA textureData = {};
-		textureData.pData = &texture.data[0];
-		textureData.RowPitch = texture.bytes_per_row;
-		textureData.SlicePitch = texture.bytes_per_row * texture.desc.Height;
+		textureData.pData = &texture->data[0];
+		textureData.RowPitch = texture->bytes_per_row;
+		textureData.SlicePitch = texture->bytes_per_row * texture->desc.Height;
 
-		UpdateSubresources(n_cmd_list, texture.resource, texture.staging_resource, 0, 0, 1, &textureData);
+		UpdateSubresources(n_cmd_list, texture->resource, texture->staging_resource, 0, 0, 1, &textureData);
 
-		n_cmd_list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+		n_cmd_list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture->resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 	}
 	else {
-		texture.desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		texture->desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> _tc0;
 		Microsoft::WRL::ComPtr<ID3D12Resource> _tc1;
-		HRESULT hr = DirectX::CreateDDSTextureFromMemory12(n_device, n_cmd_list, (uint8_t*)texture.buffer, texture.size, _tc0, _tc1);
-		_tc0.CopyTo(IID_PPV_ARGS(&texture.resource));
-		_tc1.CopyTo(IID_PPV_ARGS(&texture.staging_resource));
-		texture.desc = texture.resource->GetDesc();
+		HRESULT hr = DirectX::CreateDDSTextureFromMemory12(n_device, n_cmd_list, (uint8_t*)texture->buffer, texture->size, _tc0, _tc1);
+		_tc0.CopyTo(IID_PPV_ARGS(&texture->resource));
+		_tc1.CopyTo(IID_PPV_ARGS(&texture->staging_resource));
+		texture->desc = texture->resource->GetDesc();
 	}
 }
 
-void Destroy(Texture& texture) {
-	texture.resource->Release();
-	texture.staging_resource->Release();
+void Destroy(Texture* texture) {
+	texture->resource->Release();
+	texture->staging_resource->Release();
 }
 
 } /* rlr */

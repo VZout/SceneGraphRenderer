@@ -12,15 +12,15 @@
 
 namespace rlr {
 
-void Allocate(CommandList** cmd_list, Device& device, unsigned int num) {
-	CommandList* new_cmd_list = new CommandList();
+void Allocate(CommandList** cmd_list, Device* device, unsigned int num) {
+	auto* new_cmd_list = new CommandList();
 
 	new_cmd_list->num_allocators = num;
 	new_cmd_list->allocators = new ID3D12CommandAllocator*[num];
 
 	// Create the allocators
 	for (int i = 0; i < num; i++) {
-		HRESULT hr = device.native->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&new_cmd_list->allocators[i]));
+		HRESULT hr = device->native->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&new_cmd_list->allocators[i]));
 		if (FAILED(hr)) {
 			throw "Failed to create command allocator";
 		}
@@ -29,7 +29,7 @@ void Allocate(CommandList** cmd_list, Device& device, unsigned int num) {
 	}
 
 	// Create the command lists
-	HRESULT hr = device.native->CreateCommandList(
+	HRESULT hr = device->native->CreateCommandList(
 		0,
 		D3D12_COMMAND_LIST_TYPE_DIRECT,
 		new_cmd_list->allocators[0],
@@ -150,9 +150,9 @@ void Bind(CommandList& cmd_list, std::vector<DescriptorHeap*> heaps) {
 	cmd_list.native->SetDescriptorHeaps(heaps.size(), native_heaps.data());
 }
 
-void Bind(CommandList& cmd_list, PipelineState& pipeline_state) {
-	cmd_list.native->SetPipelineState(pipeline_state.native);
-	cmd_list.native->SetGraphicsRootSignature(pipeline_state.root_signature->native);
+void Bind(CommandList& cmd_list, PipelineState* pipeline_state) {
+	cmd_list.native->SetPipelineState(pipeline_state->native);
+	cmd_list.native->SetGraphicsRootSignature(pipeline_state->root_signature->native);
 }
 
 void SetPrimitiveTopology(CommandList& cmd_list, D3D12_PRIMITIVE_TOPOLOGY topology) {

@@ -10,20 +10,24 @@
 
 namespace rlr {
 
-void SetVertexShader(PipelineState& pipeline_state, Shader* shader) {
-	pipeline_state.vertex_shader = shader;
+void Create(PipelineState** pipeline_state) {
+	(*pipeline_state) = new PipelineState();
 }
 
-void SetFragmentShader(PipelineState& pipeline_state, Shader* shader) {
-	pipeline_state.pixel_shader = shader;
+void SetVertexShader(PipelineState* pipeline_state, Shader* shader) {
+	pipeline_state->vertex_shader = shader;
 }
 
-void SetRootSignature(PipelineState& pipeline_state, RootSignature* root_signature) {
-	pipeline_state.root_signature = root_signature;
+void SetFragmentShader(PipelineState* pipeline_state, Shader* shader) {
+	pipeline_state->pixel_shader = shader;
 }
 
-void Finalize(PipelineState& pipeline_state, Device& device, RenderWindow& render_window, PipelineStateCreateInfo create_info) {
-	pipeline_state.topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+void SetRootSignature(PipelineState* pipeline_state, RootSignature* root_signature) {
+	pipeline_state->root_signature = root_signature;
+}
+
+void Finalize(PipelineState* pipeline_state, Device* device, RenderWindow* render_window, PipelineStateCreateInfo create_info) {
+	pipeline_state->topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
 	D3D12_BLEND_DESC blend_desc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	D3D12_DEPTH_STENCIL_DESC depth_stencil_state = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
@@ -36,7 +40,7 @@ void Finalize(PipelineState& pipeline_state, Device& device, RenderWindow& rende
 	D3D12_RASTERIZER_DESC rasterize_desc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	rasterize_desc.FrontCounterClockwise = true;
 	depth_stencil_state.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-	if (pipeline_state.temp) {
+	if (pipeline_state->temp) {
 		rasterize_desc.DepthBias = 1000; // TODO: Seems like a extreme depth bias. Shouldn't be nessessary for shadows.
 		rasterize_desc.DepthClipEnable = true;
 		rasterize_desc.DepthBiasClamp = 0;
@@ -49,19 +53,19 @@ void Finalize(PipelineState& pipeline_state, Device& device, RenderWindow& rende
 	}
 	DXGI_SAMPLE_DESC sample_desc = { 1, 0 };
 
-	pipeline_state.input_layout = Vertex::GetInputLayout();
+	pipeline_state->input_layout = Vertex::GetInputLayout();
 
 	D3D12_INPUT_LAYOUT_DESC input_layout_desc = {};
-	input_layout_desc.NumElements = pipeline_state.input_layout.size();
-	input_layout_desc.pInputElementDescs = pipeline_state.input_layout.data();
+	input_layout_desc.NumElements = pipeline_state->input_layout.size();
+	input_layout_desc.pInputElementDescs = pipeline_state->input_layout.data();
 
 	D3D12_SHADER_BYTECODE vs_bytecode = {};
-	vs_bytecode.BytecodeLength = pipeline_state.vertex_shader->native->GetBufferSize();
-	vs_bytecode.pShaderBytecode = pipeline_state.vertex_shader->native->GetBufferPointer();
+	vs_bytecode.BytecodeLength = pipeline_state->vertex_shader->native->GetBufferSize();
+	vs_bytecode.pShaderBytecode = pipeline_state->vertex_shader->native->GetBufferPointer();
 
 	D3D12_SHADER_BYTECODE ps_bytecode = {};
-	ps_bytecode.BytecodeLength = pipeline_state.pixel_shader->native->GetBufferSize();
-	ps_bytecode.pShaderBytecode = pipeline_state.pixel_shader->native->GetBufferPointer();
+	ps_bytecode.BytecodeLength = pipeline_state->pixel_shader->native->GetBufferSize();
+	ps_bytecode.pShaderBytecode = pipeline_state->pixel_shader->native->GetBufferPointer();
 
 	// TODO: num render targets and formats should not be hardcoded ofcourse....
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
@@ -76,20 +80,23 @@ void Finalize(PipelineState& pipeline_state, Device& device, RenderWindow& rende
 	pso_desc.BlendState = blend_desc;
 	pso_desc.DepthStencilState = depth_stencil_state;
 	pso_desc.NumRenderTargets = create_info.num_rtv_formats;
-	pso_desc.pRootSignature = pipeline_state.root_signature->native;
+	pso_desc.pRootSignature = pipeline_state->root_signature->native;
 	pso_desc.VS = vs_bytecode;
 	pso_desc.PS = ps_bytecode;
 	pso_desc.InputLayout = input_layout_desc;
 
-	HRESULT hr = device.native->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state.native));
+	HRESULT hr = device->native->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state->native));
 	if (FAILED(hr)) {
 		throw "Failed to create graphics pipeline";
 	}
-	pipeline_state.native->SetName(L"My sick pipeline object");
+	pipeline_state->native->SetName(L"My sick pipeline object");
 }
 
-void Destroy(PipelineState& pipeline_state) {
-	pipeline_state.native->Release();
+void Destroy(PipelineState* pipeline_state) {
+	pipeline_state->native->Release();
+
+	delete pipeline_state;
+	pipeline_state = nullptr;
 }
 
 } /* rlr */

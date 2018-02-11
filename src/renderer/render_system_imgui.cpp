@@ -277,7 +277,10 @@ void RenderSystem::ImGui_RenderPostProcessingSettings(IMGUI_RENDER_FUNC_PARAMS) 
 		ImGui::DragFloat("Gamma", &imgui_gamma, 0.05);
 		ImGui::DragFloat("Exposure", &imgui_exposure, 0.05);
 		ImGui::DragFloat("Contrast", &imgui_contrast, 0.05);
+		ImGui::DragFloat("Chromatic Aberration Strength", &imgui_chroma, 0.001);
 		ImGui::Checkbox("Bloom", &imgui_bloom);
+		ImGui::Checkbox("Chromatic Aberration", &imgui_bloom);
+		ImGui::Checkbox("Film Grain", &imgui_bloom);
 	}
 	if (dock && imgui_show_cam_properties) ImGui::LetsDock(use_last_as_dest, style);
 	ImGui::EndDock();

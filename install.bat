@@ -13,7 +13,7 @@ mkdir build-win64
 cd build-win64
 
 echo %prefix% Initializing CMake (VS2017 Win64)...
-call cmake -G "Visual Studio 15 2017" ..
+call cmake -G "Visual Studio 15 2017 Win64" ..
 
 cd ..
 
