@@ -21,13 +21,6 @@ void Skeleton::Init(std::vector<Bone> bones, aiMatrix4x4 global_invere_transform
 	}
 }
 
-std::string readableaimat4(aiMatrix4x4 mat) {
-	return std::to_string(mat.a1) + std::to_string(mat.a2) + std::to_string(mat.a3) + std::to_string(mat.a4)
-		+ std::to_string(mat.b1) + std::to_string(mat.b2) + std::to_string(mat.b3) + std::to_string(mat.b4)
-		+ std::to_string(mat.c1) + std::to_string(mat.c2) + std::to_string(mat.c3) + std::to_string(mat.c4)
-		+ std::to_string(mat.d1) + std::to_string(mat.d2) + std::to_string(mat.d3) + std::to_string(mat.d4);
-}
-
 void Skeleton::UpdateBoneMatrices() {
 	bone_mats.clear();
 
@@ -41,8 +34,6 @@ void Skeleton::UpdateBoneMatrices() {
 		}
 	}
 }
-
-static float timeytime = 0;
 
 void Skeleton::PlayAnimation(Animation* anim, bool loop, bool reset) {
 	current_anim = anim;
