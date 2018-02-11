@@ -1,12 +1,12 @@
 #include <renderer/render_system.h>
 #include <renderer/window.h>
 
+#include <renderer\imgui\text_editor.h>
 #include <renderer\imgui\imgui.h>
 #include <renderer/enums.h>
 #include <d3d12.h>
 #include <fstream>
 
-#include <renderer\imgui\text_editor.h>
 
 rlr::Window* window = nullptr;
 rlr::SceneGraph* graph = nullptr;
@@ -27,7 +27,7 @@ rlr::Model* floor_model = nullptr;
 static TextEditor editor;
 auto lang = TextEditor::LanguageDefinition::HLSL();
 
-static int num_floors = 1;
+static int num_floors = 10;
 
 bool first = true;
 static bool opened = true;
@@ -164,7 +164,7 @@ int main()
 {
 
 	window = new rlr::Window();
-	window->Create("Rougelike Engine", 1280, 720, false);
+	window->Create("DX12 Renderer test", 1280, 720, false);
 
 	render_system = new rlr::RenderSystem(*window);
 	render_system->Setup();

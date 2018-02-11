@@ -77,6 +77,6 @@ if (RLE_BUILD_TESTS)
 	add_subdirectory(tests)
 
 	### STARTUP ###
-	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT RenderTest)
+	set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT BasicRenderingTest)
 endif()
 

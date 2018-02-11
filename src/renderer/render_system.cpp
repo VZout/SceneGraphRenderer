@@ -31,9 +31,9 @@ namespace rlr {
 	}
 
 	RenderSystem::~RenderSystem() {
-		for (auto i = 0; i < 3; i++) {
-			WaitFor(fences[i]);
-			Destroy(fences[i]);
+		for (auto& fence : fences) {
+			WaitFor(fence);
+			Destroy(fence);
 		}
 
 		ImGui_ImplDX12_Shutdown();
@@ -540,7 +540,7 @@ namespace rlr {
 		profiler::NewFrame();
 
 		PROFILER_BEGIN_ROOT("(CPU) Render");
-		if (render_engine) {
+		if (render_engine) { // TODO: false to not render imgui at all
 			PROFILER_BEGIN("ImGui");
 
 			RenderImGui();
