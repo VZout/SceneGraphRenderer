@@ -17,12 +17,33 @@ public:
 	void SetTextures(std::vector<Texture*> textures);
 
 	virtual void Init() override;
+	virtual void Update();
 	virtual void Render(CommandList* cmd_list, Camera const& camera, bool shadows) override;
 
 	void SetInstancedPos(fm::vec3 pos);
+	fm::vec3 GetInstancedPos() const;
 
-public:
+	void ShouldCastShadows(bool val);
+	bool IsCastingShadows() const;
+
+	void ShouldRenderInstanced(bool val);
+	bool IsInstanced() const;
+
+	void ShouldRequireUpdate(bool val);
+	bool RequiresUpdate() const;
+
+	void SetModel(Model* model);
+	Model* GetModel() const;
+
+	TextureArray* GetTextureArray() const;
+	ConstantBuffer* GetConstantBuffer() const;
+	std::string GetMaterialID() const;
+	std::string GetPipelineID() const;
+
+
+private:
 	bool cast_shadows;
+	bool requires_cb_update;
 	bool instanced;
 
 	unsigned int instanced_batch_id = 0;
@@ -33,7 +54,6 @@ public:
 	Model* model;
 	TextureArray* ta;
 	ConstantBuffer* const_buffer;
-	ConstantBuffer* shadow_const_buffer;
 };
 
 } /* rlr */

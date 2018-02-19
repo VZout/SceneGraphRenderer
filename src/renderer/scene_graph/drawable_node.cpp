@@ -6,7 +6,7 @@ namespace rlr
 {
 
 DrawableNode::DrawableNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, std::string const& pipeline_id, bool cast_shadows, bool instanced, int instanced_batch_id) 
-	: Node(graph, render_system, name),	pipeline_id(pipeline_id), cast_shadows(cast_shadows), instanced(instanced), instanced_batch_id(instanced_batch_id)
+	: Node(graph, render_system, name),	pipeline_id(pipeline_id), cast_shadows(cast_shadows), instanced(instanced), instanced_batch_id(instanced_batch_id), requires_cb_update(true)
 {
 }
 
@@ -23,7 +23,6 @@ void DrawableNode::SetTextures(std::vector<Texture*> textures)
 void DrawableNode::Init()
 {
 	Create(&const_buffer, render_system.device, sizeof(CBStruct));
-	Create(&shadow_const_buffer, render_system.device, sizeof(CBStruct));
 
 	if (instanced)
 	{
@@ -46,11 +45,36 @@ void DrawableNode::Init()
 	}
 }
 
+void DrawableNode::Update()
+{
+	if (!requires_cb_update) return;
+
+	/*CBStruct cb_data;
+
+	DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
+	DirectX::XMMATRIX rotation_x_mat = DirectX::XMMatrixRotationX(rotation.x);
+	DirectX::XMMATRIX rotation_y_mat = DirectX::XMMatrixRotationY(rotation.y);
+	DirectX::XMMATRIX rotation_z_mat = DirectX::XMMatrixRotationZ(rotation.z);
+	DirectX::XMMATRIX rotation_mat = rotation_x_mat * rotation_y_mat * rotation_z_mat;
+	DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
+
+	DirectX::XMMATRIX model_mat = scale_mat * rotation_mat * translation_mat;
+	DirectX::XMStoreFloat4x4(&cb_data.model, model_mat);
+
+	cb_data.instanced = IsInstanced();
+
+	for (size_t i = 0; i < model->meshes[0].skeleton.bone_mats.size(); i++) {
+		cb_data.weightmatrices[i] = aiMatrix4x4(model->meshes[0].skeleton.bone_mats[i]);
+	}
+
+	Update(drawable->GetConstantBuffer(), render_window.frame_idx, sizeof(cb_data), &cb_data);
+	Update(drawable->GetShadowConstantBuffer(), render_window.frame_idx, sizeof(cb_data), &cb_data);*/
+}
+
 void DrawableNode::Render(CommandList* cmd_list, Camera const& camera, bool shadows)
 {
 	if (instanced) return;
 
-	Bind(*cmd_list, graph.GetViewport()); // TODO: This can be optimized when a render pass starts.
 
 	if (shadows && !cast_shadows)
 		return;
@@ -60,14 +84,15 @@ void DrawableNode::Render(CommandList* cmd_list, Camera const& camera, bool shad
 		Bind(*cmd_list, render_system.shadow_viewport);
 		render_system.BindPipelineOptimized(cmd_list, pipeline_id + "_shadow");
 		Bind(cmd_list, render_system.shadow_projection_view_const_buffer, 2, render_system.render_window.frame_idx);
-		Bind(cmd_list, shadow_const_buffer, 0, render_system.render_window.frame_idx);
 	}
 	else
 	{
+		Bind(*cmd_list, graph.GetViewport()); // TODO: This can be optimized when a render pass starts.
 		render_system.BindPipelineOptimized(cmd_list, pipeline_id);
 		Bind(cmd_list, render_system.projection_view_const_buffer, 2, render_system.render_window.frame_idx);
-		Bind(cmd_list, const_buffer, 0, render_system.render_window.frame_idx);
 	}
+
+	Bind(cmd_list, const_buffer, 0, render_system.render_window.frame_idx);
 
 	std::vector<ID3D12DescriptorHeap*> heaps = { ta->texture_heap };
 	cmd_list->native->SetDescriptorHeaps(heaps.size(), heaps.data());
@@ -85,6 +110,71 @@ void DrawableNode::Render(CommandList* cmd_list, Camera const& camera, bool shad
 void DrawableNode::SetInstancedPos(fm::vec3 pos)
 {
 	instanced_pos = pos;
+}
+
+fm::vec3 DrawableNode::GetInstancedPos() const
+{
+	return instanced_pos;
+}
+
+void DrawableNode::ShouldCastShadows(bool val)
+{
+	cast_shadows = val;
+}
+
+bool DrawableNode::IsCastingShadows() const
+{
+	return cast_shadows;
+}
+
+void DrawableNode::ShouldRenderInstanced(bool val)
+{
+	instanced = val;
+}
+
+bool DrawableNode::IsInstanced() const
+{
+	return instanced;
+}
+
+void DrawableNode::ShouldRequireUpdate(bool val)
+{
+	requires_cb_update = val;
+}
+
+bool DrawableNode::RequiresUpdate() const
+{
+	return requires_cb_update;
+}
+
+void DrawableNode::SetModel(Model* model)
+{
+	this->model = model;
+}
+
+Model* DrawableNode::GetModel() const
+{
+	return model;
+}
+
+TextureArray* DrawableNode::GetTextureArray() const
+{
+	return ta;
+}
+
+ConstantBuffer* DrawableNode::GetConstantBuffer() const
+{
+	return const_buffer;
+}
+
+std::string DrawableNode::GetMaterialID() const
+{
+	return material_id;
+}
+
+std::string DrawableNode::GetPipelineID() const
+{
+	return pipeline_id;
 }
 
 } /* rlr */

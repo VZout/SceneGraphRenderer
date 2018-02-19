@@ -220,6 +220,7 @@ private:
 	bool imgui_show_render_graph = true;
 	bool imgui_show_light_properties = true;
 	bool imgui_show_cam_properties = true;
+	bool imgui_show_hardware_details = true;
 	bool imgui_show_game_view = true;
 	bool imgui_show_postprocessing_settings = true;
 

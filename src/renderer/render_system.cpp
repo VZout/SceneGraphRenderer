@@ -14,7 +14,6 @@
 #include "dx12\d3dx12.h"
 #include "vertex.h"
 #include "model.h"
-#include "drawable.h"
 
 #include "math\vec.hpp"
 
@@ -731,15 +730,15 @@ namespace rlr {
 		for (std::map<int, Batch*>::iterator it = static_instanced_batches.begin(); it != static_instanced_batches.end(); it++) {
 			DrawableNode* drawable = it->second->inst_drawable;
 
-			BindPipelineOptimized(cmd_list, drawable->pipeline_id);
-			std::vector<ID3D12DescriptorHeap*> heaps = { drawable->ta->texture_heap };
+			BindPipelineOptimized(cmd_list, drawable->GetPipelineID());
+			std::vector<ID3D12DescriptorHeap*> heaps = { drawable->GetTextureArray()->texture_heap };
 			cmd_list->native->SetDescriptorHeaps(heaps.size(), heaps.data());
 
-			for (auto i = 0; i < drawable->model->meshes.size(); i++) {
+			for (auto i = 0; i < drawable->GetModel()->meshes.size(); i++) {
 				D3D12_VERTEX_BUFFER_VIEW views[2];
-				views[0].BufferLocation = drawable->model->meshes[i].vb->buffer->GetGPUVirtualAddress();
-				views[0].StrideInBytes = drawable->model->meshes[i].vb->stride_in_bytes;
-				views[0].SizeInBytes = drawable->model->meshes[i].vb->size;
+				views[0].BufferLocation = drawable->GetModel()->meshes[i].vb->buffer->GetGPUVirtualAddress();
+				views[0].StrideInBytes = drawable->GetModel()->meshes[i].vb->stride_in_bytes;
+				views[0].SizeInBytes = drawable->GetModel()->meshes[i].vb->size;
 
 				views[1].BufferLocation = it->second->instanced_staging_buffer->buffer->GetGPUVirtualAddress();
 				views[1].StrideInBytes = it->second->instanced_staging_buffer->stride_in_bytes;
@@ -747,13 +746,13 @@ namespace rlr {
 
 				cmd_list->native->IASetVertexBuffers(0, 2, views);
 
-				BindIndexBuffer(cmd_list, drawable->model->meshes[i].ib);
-				Bind(*cmd_list, *drawable->ta, 1);
-				Bind(cmd_list, drawable->const_buffer, 0, render_window.frame_idx);
+				BindIndexBuffer(cmd_list, drawable->GetModel()->meshes[i].ib);
+				Bind(*cmd_list, *drawable->GetTextureArray(), 1);
+				Bind(cmd_list, drawable->GetConstantBuffer(), 0, render_window.frame_idx);
 
 				Bind(cmd_list, projection_view_const_buffer, 2, render_window.frame_idx);
 
-				DrawIndexed(cmd_list, drawable->model->meshes[i].indices.size(), it->second->num_inst_model);
+				DrawIndexed(cmd_list, drawable->GetModel()->meshes[i].indices.size(), it->second->num_inst_model);
 			}
 		}
 	}
@@ -850,30 +849,28 @@ namespace rlr {
 			CBStruct cb_data;
 
 			DirectX::XMMATRIX tr = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
-			DirectX::XMMATRIX rotXMat = DirectX::XMMatrixRotationX(rotation.x);
-			DirectX::XMMATRIX rotYMat = DirectX::XMMatrixRotationY(rotation.y);
-			DirectX::XMMATRIX rotZMat = DirectX::XMMatrixRotationZ(rotation.z);
-			DirectX::XMMATRIX rotMat = rotXMat * rotYMat * rotZMat;
+			//DirectX::XMMATRIX rotXMat = DirectX::XMMatrixRotationX(rotation.x);
+			//DirectX::XMMATRIX rotYMat = DirectX::XMMatrixRotationY(rotation.y);
+			//DirectX::XMMATRIX rotZMat = DirectX::XMMatrixRotationZ(rotation.z);
+			DirectX::XMMATRIX rot = DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
 			DirectX::XMMATRIX sc = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
 
-			DirectX::XMMATRIX model = sc * rotMat * tr;
+			DirectX::XMMATRIX model = sc * rot * tr;
 			DirectX::XMStoreFloat4x4(&cb_data.model, model);
 
-			cb_data.instanced = drawable->instanced;
+			cb_data.instanced = drawable->IsInstanced();
 
-			for (size_t i = 0; i < drawable->model->meshes[0].skeleton.bone_mats.size(); i++) {
-				cb_data.weightmatrices[i] = aiMatrix4x4(drawable->model->meshes[0].skeleton.bone_mats[i]);
+			for (size_t i = 0; i < drawable->GetModel()->meshes[0].skeleton.bone_mats.size(); i++) {
+				cb_data.weightmatrices[i] = aiMatrix4x4(drawable->GetModel()->meshes[0].skeleton.bone_mats[i]);
 			}
 
 			if (all) {
 				for (auto i = 0; i < 3; i++) {
-					Update(drawable->const_buffer, i, sizeof(cb_data), &cb_data);
-					Update(drawable->shadow_const_buffer, i, sizeof(cb_data), &cb_data);
+					Update(drawable->GetConstantBuffer(), i, sizeof(cb_data), &cb_data);
 				}
 			}
 			else {
-				Update(drawable->const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
-				Update(drawable->shadow_const_buffer, render_window.frame_idx, sizeof(cb_data), &cb_data);
+				Update(drawable->GetConstantBuffer(), render_window.frame_idx, sizeof(cb_data), &cb_data);
 			}
 		}
 	}

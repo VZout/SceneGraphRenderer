@@ -7,7 +7,6 @@
 #include <d3d12.h>
 #include <fstream>
 
-
 rlr::Window* window = nullptr;
 rlr::SceneGraph* graph = nullptr;
 rlr::RenderSystem* render_system = nullptr;
@@ -35,14 +34,19 @@ bool show_engine = true;
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame;
 
-void ImGui_Render() {
+void ImGui_Render()
+{
 	int width = ImGui::GetIO().DisplaySize.x, height = ImGui::GetIO().DisplaySize.y;
+	float offset = 18;
 	ImGui::RootDock(ImVec2(0, 18), ImVec2(width, height - 18));
 
-	if (ImGui::BeginMainMenuBar()) {
-		if (ImGui::BeginMenu("File")) {
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
 			ImGui::MenuItem("Toggle Engine", NULL, &show_engine);
-			if (!show_engine) {
+			if (!show_engine)
+			{
 				render_system->HideEngine();
 			}
 			ImGui::EndMenu();
@@ -55,19 +59,24 @@ void ImGui_Render() {
 	render_system->ImGui_RenderPostProcessingSettings(first, true, ImGui::DockStyle::CENTER);
 	render_system->ImGui_RenderRenderGraph(first, true, ImGui::DockStyle::CENTER, graph);
 
-	if (ImGui::BeginDock("Shader Editor", &opened)) {
+	if (ImGui::BeginDock("Shader Editor", &opened))
+	{
 		if (ImGui::Button("Save"))
+		{
 			editor.SetPalette(TextEditor::GetDarkPalette());
+		}
 
 		ImGui::SameLine();
 
 		auto cpos = editor.GetCursorPosition();
 		
 		ImVec4 color;
-		if (editor.CanUndo()) {
+		if (editor.CanUndo())
+		{
 			color = ImVec4(1, 0.4, 0.4, 1);
 		}
-		else {
+		else
+		{
 			color = ImVec4(1, 1, 1, 1);
 		}
 		ImGui::TextColored(color, "%d/%d (%d lines) | %s | %s | %s%s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
@@ -88,7 +97,8 @@ void ImGui_Render() {
 	first = false;
 }
 
-void RegisterPipelines() {
+void RegisterPipelines()
+{
 	CD3DX12_DESCRIPTOR_RANGE  desc_table_ranges;
 	desc_table_ranges.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0);
 
@@ -144,16 +154,17 @@ void RegisterPipelines() {
 	render_system->RegisterPipeline("anim_shadow", sanim);
 }
 
-void Staging(rlr::Device* device, rlr::CommandList* cmd_list) {
+void Staging(rlr::Device* device, rlr::CommandList* cmd_list)
+{
 	Stage(spot_albedo, device, cmd_list);
 	Stage(spot_spec, device, cmd_list);
 	Stage(spot_metal, device, cmd_list);
 	Stage(wall_texture, device, cmd_list);
 	Stage(wall_texture_specular, device, cmd_list);
 	Stage(wall_texture_normal, device, cmd_list);
-	Stage(*dr0->model, device, cmd_list);
+	Stage(*dr0->GetModel(), device, cmd_list);
 	Stage(*floor_model, device, cmd_list); 
-	Stage(*dr1->model, device, cmd_list);
+	Stage(*dr1->GetModel(), device, cmd_list);
 }
 
 #ifdef _temp
@@ -162,7 +173,6 @@ INT WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nC
 int main()
 #endif
 {
-
 	window = new rlr::Window();
 	window->Create("DX12 Renderer test", 1280, 720, false);
 
@@ -187,10 +197,10 @@ int main()
 	floor_model = new rlr::Model();
 	rlr::Load(*floor_model, "resources/tests/floor.fbx");
 
-	dr0->model = new rlr::Model();
-	dr1->model = new rlr::Model();
-	rlr::Load(*dr0->model, "resources/tests/spot.obj");
-	rlr::Load(*dr1->model, "resources/tests/dance.fbx");
+	dr0->SetModel(new rlr::Model());
+	dr1->SetModel(new rlr::Model());
+	rlr::Load(*dr0->GetModel(), "resources/tests/spot.obj");
+	rlr::Load(*dr1->GetModel(), "resources/tests/dance.fbx");
 
 	render_system->RegisterImGuiRenderFunc(ImGui_Render);
 	render_system->RegisterStagingFunc(Staging);
@@ -200,7 +210,8 @@ int main()
 
 	graph->InitAll();
 
-	window->BindOnResize([](int width, int height) {
+	window->BindOnResize([](int width, int height)
+	{
 		graph->ResizeViewport(width, height);
 	});
 
@@ -214,48 +225,50 @@ int main()
 	left_wall->SetTextures(metal_textures);
 	dr1->SetTextures(wall_textures);
 
-	dr0->cast_shadows = true;
+	dr0->ShouldCastShadows(true);
 
-	for (auto i = 0; i < num_floors; i++) {
+	for (auto i = 0; i < num_floors; i++)
+	{
 		auto floor = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Instanced floor piece", "basic", false, true, 0);
 		floor->SetInstancedPos(fm::vec3(i*24, 0, 0));
 		floor->SetTextures(floor_textures);
-		floor->model = floor_model;
+		floor->SetModel(floor_model);
 
 		floor->Init();
 
 		render_system->UpdateGenericCB(floor, fm::vec3(0, -1, 0), fm::vec3(-1.57079633, 0, 0), fm::vec3(0.25, 0.25, 0.25), true);
 	}
 
-	for (std::map<int, rlr::Batch*>::iterator it = render_system->static_instanced_batches.begin(); it != render_system->static_instanced_batches.end(); it++) {
+	for (std::map<int, rlr::Batch*>::iterator it = render_system->static_instanced_batches.begin(); it != render_system->static_instanced_batches.end(); it++)
+	{
 		Create(&it->second->instanced_staging_buffer, render_system->device, it->second->inst_positions.data(), it->second->inst_positions.size() * sizeof(fm::vec3), sizeof(fm::vec3), rlr::ResourceState::VERTEX_AND_CONSTANT_BUFFER);
 	}
 
-	dr1->model->meshes[0].skeleton.PlayAnimation(dr1->model->animations[0]);
+	dr1->GetModel()->meshes[0].skeleton.PlayAnimation(dr1->GetModel()->animations[0]);
 
 	last_frame = std::chrono::high_resolution_clock::now();
 
+	editor.SetLanguageDefinition(lang);
+	std::ifstream t("resources/engine/shaders/compo_pixel.hlsl");
+	if (t.good())
 	{
-		editor.SetLanguageDefinition(lang);
-		std::ifstream t("resources/engine/shaders/compo_pixel.hlsl");
-		if (t.good())
-		{
-			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-			editor.SetText(str);
-		}
+		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+		editor.SetText(str);
 	}
 
 	bool first = true;
 
 	float w = 0.f;
-	while (!window->ShouldClose()) {
+	while (!window->ShouldClose())
+	{
 		w += 0.1;
 		window->PollEvents();
 
-		if (first) {
-			back_wall->model = floor_model;
-			left_wall->model = floor_model;
-			right_wall->model = floor_model;
+		if (first)
+		{
+			back_wall->SetModel(floor_model);
+			left_wall->SetModel(floor_model);
+			right_wall->SetModel(floor_model);
 
 			first = false;
 
@@ -271,7 +284,7 @@ int main()
 		last_frame = now;
 		float delta = diff.count();
 
-		dr1->model->meshes[0].skeleton.Update(delta);
+		dr1->GetModel()->meshes[0].skeleton.Update(delta);
 
 		render_system->UpdateGenericCB(dr1, fm::vec3(1, -1, 0), fm::vec3(0, 180, 0), fm::vec3(0.015, 0.015, 0.015), false);
 
