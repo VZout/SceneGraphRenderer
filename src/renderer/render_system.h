@@ -191,7 +191,6 @@ public:
 	void ClearAllPipelines();
 	PipelineState* GetPipeline(std::string id);
 
-	void UpdateGenericCB(std::shared_ptr<DrawableNode> drawable, fm::vec3 position, fm::vec3 rotation, fm::vec3 scale, bool all);
 	void UpdateSceneCB();
 	void UpdatePVCB();
 
