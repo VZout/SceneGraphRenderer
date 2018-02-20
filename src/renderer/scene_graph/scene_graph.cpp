@@ -71,8 +71,13 @@ namespace rlr
 
 	}
 
+	Viewport RootNode::GetViewport() const
+	{
+		return viewport;
+	}
+
 	SceneGraph::SceneGraph(RenderSystem& render_system, int width, int height)
-		: m_render_system(render_system),
+		: m_render_system(render_system), num_nodes(0),
 		m_diffuse_matrix_transforms(false),
 		root(CreateNode<RootNode>("Root", width, height))
 	{
@@ -127,6 +132,11 @@ namespace rlr
 	Viewport SceneGraph::GetViewport() const
 	{
 		return std::static_pointer_cast<RootNode>(root)->viewport;
+	}
+
+	unsigned int SceneGraph::GetNodeCount() const
+	{
+		return num_nodes;
 	}
 
 	void SceneGraph::ResizeViewport(int width, int height)

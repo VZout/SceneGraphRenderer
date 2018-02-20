@@ -60,6 +60,8 @@ namespace rlr
 		virtual void Init() final;
 		virtual void Render(CommandList* cmd_list, Camera const& camera, bool shadows) final;
 
+		Viewport GetViewport() const;
+
 	private:
 		Viewport viewport;
 	};
@@ -79,6 +81,7 @@ namespace rlr
 		[[nodiscard]] std::shared_ptr<T> CreateNode(std::string const& name, Types ... args)
 		{
 			return std::make_shared<T>(*this, m_render_system, name, args...);
+			num_nodes++;
 		}
 
 		template<typename T, class ... Types>
@@ -86,16 +89,19 @@ namespace rlr
 		{
 			auto node = std::make_shared<T>(*this, m_render_system, name, args...);
 			parent->AddChild(node);
+			num_nodes++;
 			return node;
 		}
 
 		Viewport GetViewport() const;
+		unsigned int GetNodeCount() const;
 		void ResizeViewport(int width, int height);
 
 	private:
 		RenderSystem& m_render_system;
 
 		bool m_diffuse_matrix_transforms;
+		unsigned int num_nodes;
 	};
 
 } /* rlr */

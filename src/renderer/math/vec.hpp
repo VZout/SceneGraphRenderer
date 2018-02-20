@@ -72,7 +72,7 @@ namespace fm {
 		}
 
 		Vec(T data[R]) {
-			this->data = data;
+			memcpy(this->data, data, sizeof(T) * R);
 		}
 
 		~Vec() {

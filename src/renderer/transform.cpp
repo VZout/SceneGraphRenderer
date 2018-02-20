@@ -48,7 +48,8 @@ namespace rlr
 
 	void Transform::SetPosition(fm::vec3 pos)
 	{
-		if (position != pos) {
+		if (position != pos)
+		{
 			requires_update = true;
 		}
 
@@ -62,7 +63,8 @@ namespace rlr
 
 	void Transform::SetRotation(fm::vec3 rot)
 	{
-		if (rotation != rot) {
+		if (rotation != rot)
+		{
 			requires_update = true;
 		}
 
@@ -76,7 +78,8 @@ namespace rlr
 
 	void Transform::SetScale(fm::vec3 sc)
 	{
-		if (scale != sc) {
+		if (scale != sc)
+		{
 			requires_update = true;
 		}
 

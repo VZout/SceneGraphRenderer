@@ -6,7 +6,8 @@ namespace rlr
 {
 
 DrawableNode::DrawableNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, std::string const& pipeline_id, bool movable, bool cast_shadows, bool instanced, int instanced_batch_id)
-	: Node(graph, render_system, name),	pipeline_id(pipeline_id), movable(movable), cast_shadows(cast_shadows), instanced(instanced), instanced_batch_id(instanced_batch_id), requires_cb_update(true), transform(new Transform())
+	: Node(graph, render_system, name),	pipeline_id(pipeline_id), movable(movable), cast_shadows(cast_shadows),
+	instanced(instanced), instanced_batch_id(instanced_batch_id), requires_cb_update(true), transform(new Transform())
 {
 }
 
