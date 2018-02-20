@@ -25,6 +25,11 @@ namespace rlr
 
 	}
 
+	void Node::Update()
+	{
+
+	}
+
 	void Node::AddChild(std::shared_ptr<Node> node)
 	{
 		node->parent = shared_from_this();
@@ -96,6 +101,26 @@ namespace rlr
 		{
 			child->Init();
 			recursive_init(child);
+		}
+	}
+
+	void SceneGraph::Update()
+	{
+		using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
+
+		recursive_func_t recursive_update = [&recursive_update](std::shared_ptr<Node> node)
+		{
+			for (auto child : node->children)
+			{
+				child->Update();
+				recursive_update(child);
+			}
+		};
+
+		for (auto child : root->children)
+		{
+			child->Update();
+			recursive_update(child);
 		}
 	}
 

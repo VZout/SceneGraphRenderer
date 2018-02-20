@@ -849,9 +849,6 @@ namespace rlr {
 			CBStruct cb_data;
 
 			DirectX::XMMATRIX tr = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
-			//DirectX::XMMATRIX rotXMat = DirectX::XMMatrixRotationX(rotation.x);
-			//DirectX::XMMATRIX rotYMat = DirectX::XMMatrixRotationY(rotation.y);
-			//DirectX::XMMATRIX rotZMat = DirectX::XMMatrixRotationZ(rotation.z);
 			DirectX::XMMATRIX rot = DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
 			DirectX::XMMATRIX sc = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
 

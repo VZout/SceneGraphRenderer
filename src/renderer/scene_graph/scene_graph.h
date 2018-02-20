@@ -27,6 +27,7 @@ namespace rlr
 		virtual ~Node();
 
 		virtual void Init() = 0;
+		virtual void Update();
 		virtual void Render(CommandList* cmd_list, Camera const& camera, bool shadows) = 0;
 		virtual void OnAdded() {}
 
@@ -72,6 +73,7 @@ namespace rlr
 		std::shared_ptr<Node> root;
 
 		void InitAll();
+		void Update();
 
 		template<typename T, class ... Types>
 		[[nodiscard]] std::shared_ptr<T> CreateNode(std::string const& name, Types ... args)
