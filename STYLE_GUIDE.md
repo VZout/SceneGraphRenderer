@@ -5,6 +5,7 @@ Names are capitalized in the same way as in most of the C++ standard.
 * function parameters use snake_case style
 * template parameters use **C**amel**C**ase style
 * custom class names use **C**amel**C**ase style
+* custom function names use **C**amel**C**ase style
 * variable names use snake_case style
 * macro and constant names use **ALL_CAPS** style
 
@@ -24,7 +25,7 @@ for (...).
  
 std::vector<int, MyAllocator> v;
  
-int complex_function(int long_param_name,
+int ComplexFunction(int long_param_name,
                      int& another_param_name);
  
 int main(int argc, char** argv)
