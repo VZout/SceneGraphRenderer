@@ -63,4 +63,4 @@ file(GLOB_RECURSE SOURCES "engine/*.cpp")
 file(GLOB_RECURSE HEADERS "engine/*.h")
 
 add_library(RLEngine ${SOURCES} ${HEADERS})
-target_link_libraries(RLEngine RLCommon)
+target_link_libraries(RLEngine RLRenderer RLCommon)
