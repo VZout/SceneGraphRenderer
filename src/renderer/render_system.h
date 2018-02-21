@@ -29,8 +29,6 @@ namespace rlu {
 	class ThreadPool;
 }
 
-class DrawableNode;
-
 namespace rlr {
 
 struct Model;

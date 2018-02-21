@@ -102,11 +102,7 @@ namespace rlr
 			}
 		};
 
-		for (auto child : root->children)
-		{
-			child->Init();
-			recursive_init(child);
-		}
+		recursive_init(root);
 	}
 
 	void SceneGraph::Update()
@@ -122,11 +118,7 @@ namespace rlr
 			}
 		};
 
-		for (auto child : root->children)
-		{
-			child->Update();
-			recursive_update(child);
-		}
+		recursive_update(root);
 	}
 
 	Viewport SceneGraph::GetViewport() const
