@@ -5,14 +5,16 @@
 namespace rlr
 {
 
-DrawableNode::DrawableNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, std::string const& pipeline_id, bool cast_shadows, bool instanced, int instanced_batch_id) 
-	: Node(graph, render_system, name),	pipeline_id(pipeline_id), cast_shadows(cast_shadows), instanced(instanced), instanced_batch_id(instanced_batch_id), requires_cb_update(true)
+DrawableNode::DrawableNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, std::string const& pipeline_id, bool movable, bool cast_shadows, bool instanced, int instanced_batch_id)
+	: Node(graph, render_system, name),	pipeline_id(pipeline_id), movable(movable), cast_shadows(cast_shadows),
+	instanced(instanced), instanced_batch_id(instanced_batch_id), requires_cb_update(true), transform(new Transform())
 {
 }
 
 DrawableNode::~DrawableNode()
 {
 	delete ta;
+	delete transform;
 }
 
 void DrawableNode::SetTextures(std::vector<Texture*> textures)
@@ -43,32 +45,52 @@ void DrawableNode::Init()
 			render_system.static_instanced_batches.insert(std::pair<int, Batch*>(instanced_batch_id, b));
 		}
 	}
+
+	if (!movable)
+	{
+		if (transform->RequiresUpdate())
+		{
+			transform->Update();
+		}
+
+		if (!requires_cb_update) return;
+
+		CBStruct cb_data;
+
+		DirectX::XMStoreFloat4x4(&cb_data.model, transform->GetModel());
+
+		cb_data.instanced = IsInstanced();
+
+		for (auto i = 0; i < 3; i++)
+		{
+			rlr::Update(const_buffer, i, sizeof(cb_data), &cb_data);
+		}
+	}
 }
 
 void DrawableNode::Update()
 {
-	if (!requires_cb_update) return;
+	if (!movable) return;
 
-	/*CBStruct cb_data;
+	if (transform->RequiresUpdate())
+	{
+		transform->Update();
+	}
 
-	DirectX::XMMATRIX translation_mat = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
-	DirectX::XMMATRIX rotation_x_mat = DirectX::XMMatrixRotationX(rotation.x);
-	DirectX::XMMATRIX rotation_y_mat = DirectX::XMMatrixRotationY(rotation.y);
-	DirectX::XMMATRIX rotation_z_mat = DirectX::XMMatrixRotationZ(rotation.z);
-	DirectX::XMMATRIX rotation_mat = rotation_x_mat * rotation_y_mat * rotation_z_mat;
-	DirectX::XMMATRIX scale_mat = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
+	if (!requires_cb_update) return; // TODO: actually make requires cb update usefull.
 
-	DirectX::XMMATRIX model_mat = scale_mat * rotation_mat * translation_mat;
-	DirectX::XMStoreFloat4x4(&cb_data.model, model_mat);
+	CBStruct cb_data;
+
+	DirectX::XMStoreFloat4x4(&cb_data.model, transform->GetModel());
 
 	cb_data.instanced = IsInstanced();
 
-	for (size_t i = 0; i < model->meshes[0].skeleton.bone_mats.size(); i++) {
+	for (size_t i = 0; i < model->meshes[0].skeleton.bone_mats.size(); i++)
+	{
 		cb_data.weightmatrices[i] = aiMatrix4x4(model->meshes[0].skeleton.bone_mats[i]);
 	}
 
-	Update(drawable->GetConstantBuffer(), render_window.frame_idx, sizeof(cb_data), &cb_data);
-	Update(drawable->GetShadowConstantBuffer(), render_window.frame_idx, sizeof(cb_data), &cb_data);*/
+	rlr::Update(const_buffer, render_system.render_window.frame_idx, sizeof(cb_data), &cb_data);
 }
 
 void DrawableNode::Render(CommandList* cmd_list, Camera const& camera, bool shadows)
@@ -145,6 +167,16 @@ void DrawableNode::ShouldRequireUpdate(bool val)
 bool DrawableNode::RequiresUpdate() const
 {
 	return requires_cb_update;
+}
+
+Transform* DrawableNode::GetTransform() const
+{
+	return transform;
+}
+
+bool DrawableNode::IsMovable() const
+{
+	return movable;
 }
 
 void DrawableNode::SetModel(Model* model)

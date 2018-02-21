@@ -844,37 +844,6 @@ namespace rlr {
 		registerd_pipelines.clear();
 	}
 
-	void RenderSystem::UpdateGenericCB(std::shared_ptr<DrawableNode> drawable, fm::vec3 position, fm::vec3 rotation, fm::vec3 scale, bool all) {
-		{
-			CBStruct cb_data;
-
-			DirectX::XMMATRIX tr = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
-			//DirectX::XMMATRIX rotXMat = DirectX::XMMatrixRotationX(rotation.x);
-			//DirectX::XMMATRIX rotYMat = DirectX::XMMatrixRotationY(rotation.y);
-			//DirectX::XMMATRIX rotZMat = DirectX::XMMatrixRotationZ(rotation.z);
-			DirectX::XMMATRIX rot = DirectX::XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-			DirectX::XMMATRIX sc = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
-
-			DirectX::XMMATRIX model = sc * rot * tr;
-			DirectX::XMStoreFloat4x4(&cb_data.model, model);
-
-			cb_data.instanced = drawable->IsInstanced();
-
-			for (size_t i = 0; i < drawable->GetModel()->meshes[0].skeleton.bone_mats.size(); i++) {
-				cb_data.weightmatrices[i] = aiMatrix4x4(drawable->GetModel()->meshes[0].skeleton.bone_mats[i]);
-			}
-
-			if (all) {
-				for (auto i = 0; i < 3; i++) {
-					Update(drawable->GetConstantBuffer(), i, sizeof(cb_data), &cb_data);
-				}
-			}
-			else {
-				Update(drawable->GetConstantBuffer(), render_window.frame_idx, sizeof(cb_data), &cb_data);
-			}
-		}
-	}
-
 	float lerp(float a, float b, float f)
 	{
 		return a + f * (b - a);

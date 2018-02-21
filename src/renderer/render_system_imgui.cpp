@@ -3,6 +3,8 @@
 #include <locale>
 #include <codecvt>
 
+#include "scene_graph\drawable_node.h"
+
 namespace rlr {
 
 	float profiler_multiply_result = 1;
@@ -302,19 +304,68 @@ namespace rlr {
 		ImGui::EndDock();
 	}
 
+	void imGui_SceneGraphNode(std::shared_ptr<Node> node) {
+		ImGui::NextColumn();
+
+		auto n = std::dynamic_pointer_cast<DrawableNode>(node);
+		if (n && n->IsMovable()) {
+			if (ImGui::CollapsingHeader("Transform")) {
+				Transform* trans = n->GetTransform();
+
+				float* pos = trans->GetPosition().data;
+				float* rot = trans->GetRotation().data;
+				float* sc = trans->GetScale().data;
+
+				std::string name = " (" + node->GetName() + ")";
+				ImGui::DragFloat3(("Position" + name).c_str(), pos, 0.1f);
+				ImGui::DragFloat3(("Rotation" + name).c_str(), rot, 0.1f);
+				ImGui::DragFloat3(("Scale" + name).c_str(), sc, 0.1f);
+
+				trans->SetPosition(pos);
+				trans->SetRotation(rot);
+				trans->SetScale(sc);
+			}
+		}
+		else if (n && !n->IsMovable())
+		{
+			std::string str = "Sationary";
+			if (n->IsInstanced()) str += ", Instanced";
+			str += " object";
+
+			ImGui::TextDisabled(str.c_str());
+		}
+		else if (auto root = std::dynamic_pointer_cast<RootNode>(node)) {
+			int w = root->GetViewport().viewport.Width;
+			int h = root->GetViewport().viewport.Height;;
+			ImGui::TextDisabled(("Viewport: " + std::to_string(w) + ", " + std::to_string(h)).c_str());
+		}
+			
+		ImGui::NextColumn();
+	}
+
 	void RenderSystem::ImGui_RenderRenderGraph(IMGUI_RENDER_FUNC_PARAMS, SceneGraph* graph) {
-		if (ImGui::BeginDock("Render Graph", &imgui_show_render_graph)) {
+		if (ImGui::BeginDock("Scene Graph", &imgui_show_render_graph, ImGuiWindowFlags_AlwaysVerticalScrollbar)) {
 			using recursive_func_t = std::function<void(std::shared_ptr<Node>)>;
 
-			ImGui::Text("Node count: %f", 66.f);
+			ImGui::Button("Collapse All");
+			ImGui::SameLine();
+			ImGui::Button("Expand All");
+			ImGui::SameLine();
+			ImGui::Text("Node count: %d", graph->GetNodeCount());
+
+			ImGui::Columns(2, NULL, true);
 
 			recursive_func_t recursive_graph = [&](std::shared_ptr<Node> node) {
 				bool node_open = false;
 				if (!node->GetChildren().empty()) {
 					node_open = ImGui::TreeNode(node->GetName().c_str());
+
+					imGui_SceneGraphNode(node);
 				}
 				else {
 					ImGui::Text(node->GetName().c_str());
+
+					imGui_SceneGraphNode(node);
 				}
 
 				for (auto child : node->GetChildren()) {
@@ -329,6 +380,8 @@ namespace rlr {
 			};
 
 			recursive_graph(graph->root);
+
+			ImGui::Columns(1);
 
 		}
 		if (dock && imgui_show_cam_properties) ImGui::LetsDock(use_last_as_dest, style);

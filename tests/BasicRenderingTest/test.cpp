@@ -1,7 +1,6 @@
 #include <renderer/render_system.h>
 #include <renderer/window.h>
 
-#include <renderer\imgui\text_editor.h>
 #include <renderer\imgui\imgui.h>
 #include <renderer/enums.h>
 #include <d3d12.h>
@@ -23,13 +22,9 @@ rlr::Texture* wall_texture_specular = nullptr;
 rlr::Texture* wall_texture_normal = nullptr;
 rlr::Model* floor_model = nullptr;
 
-static TextEditor editor;
-auto lang = TextEditor::LanguageDefinition::HLSL();
-
 static int num_floors = 10;
 
 bool first = true;
-static bool opened = true;	
 bool show_engine = true;
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame;
@@ -58,37 +53,6 @@ void ImGui_Render()
 	render_system->ImGui_RenderHardwareDetails(first, false, ImGui::DockStyle::TOP);
 	render_system->ImGui_RenderPostProcessingSettings(first, true, ImGui::DockStyle::CENTER);
 	render_system->ImGui_RenderRenderGraph(first, true, ImGui::DockStyle::CENTER, graph);
-
-	if (ImGui::BeginDock("Shader Editor", &opened))
-	{
-		if (ImGui::Button("Save"))
-		{
-			editor.SetPalette(TextEditor::GetDarkPalette());
-		}
-
-		ImGui::SameLine();
-
-		auto cpos = editor.GetCursorPosition();
-		
-		ImVec4 color;
-		if (editor.CanUndo())
-		{
-			color = ImVec4(1, 0.4, 0.4, 1);
-		}
-		else
-		{
-			color = ImVec4(1, 1, 1, 1);
-		}
-		ImGui::TextColored(color, "%d/%d (%d lines) | %s | %s | %s%s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
-			editor.IsOverwrite() ? "Ovr" : "Ins",
-			editor.GetLanguageDefinition().mName.c_str(),
-			"compo_pixel.hlsl",
-			editor.CanUndo() ? "*" : "");
-		editor.Render("TextEditor");
-	}
-	if (first) ImGui::LetsDock(true, ImGui::DockStyle::CENTER);
-	ImGui::EndDock();
-
 	render_system->ImGui_RenderGameView(first, true, ImGui::DockStyle::RIGHT);
 	render_system->ImGui_RenderLightProperties(first, false, ImGui::DockStyle::BOTTOM);
 	render_system->ImGui_RenderProfiler(first);
@@ -182,7 +146,7 @@ int main()
 	graph = new rlr::SceneGraph(*render_system, 1280, 720);
 
 	dr0 = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Cow", "basic");
-	dr1 = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Dancing Human", "anim");
+	dr1 = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Dancing Human", "anim", true);
 	back_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Back Wall", "basic");
 	left_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Left Wall", "basic");
 	right_wall = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Right Wall", "basic");
@@ -208,8 +172,6 @@ int main()
 
 	RegisterPipelines();
 
-	graph->InitAll();
-
 	window->BindOnResize([](int width, int height)
 	{
 		graph->ResizeViewport(width, height);
@@ -225,19 +187,36 @@ int main()
 	left_wall->SetTextures(metal_textures);
 	dr1->SetTextures(wall_textures);
 
-	dr0->ShouldCastShadows(true);
+	// Set the transforms of the enviroment.
+	back_wall->GetTransform()->Set(fm::vec3(0, 0, 3), fm::vec3(3.14159265, 0, 0), fm::vec3(0.25, 0.25, 0.25));
+	left_wall->GetTransform()->Set(fm::vec3(3, 0, 0), fm::vec3(0, -1.57079633, 0), fm::vec3(0.25, 0.25, 0.25));
+	right_wall->GetTransform()->Set(fm::vec3(-3, 0, 0), fm::vec3(0, 1.57079633, 0), fm::vec3(0.25, 0.25, 0.25));
+
+	// Set transform of dancing woman.
+	dr1->GetTransform()->SetPosition(fm::vec3(1, -1, 0));
+	dr1->GetTransform()->SetRotation(fm::vec3(0, 180, 0));
+	dr1->GetTransform()->SetScale(fm::vec3(0.015, 0.015, 0.015));
+
+	// Set transform of cow
+	dr0->GetTransform()->SetPosition(fm::vec3(-1, -0.3, 0));
+	dr0->GetTransform()->SetRotation(fm::vec3(0, -45, 0));
+	dr0->GetTransform()->SetScale(fm::vec3(1, 1, 1));
 
 	for (auto i = 0; i < num_floors; i++)
 	{
-		auto floor = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Instanced floor piece", "basic", false, true, 0);
+		auto floor = graph->CreateChildNode<rlr::DrawableNode>(graph->root, "Instanced floor piece", "basic", false, false, true, 0);
 		floor->SetInstancedPos(fm::vec3(i*24, 0, 0));
 		floor->SetTextures(floor_textures);
 		floor->SetModel(floor_model);
 
 		floor->Init();
 
-		render_system->UpdateGenericCB(floor, fm::vec3(0, -1, 0), fm::vec3(-1.57079633, 0, 0), fm::vec3(0.25, 0.25, 0.25), true);
+		floor->GetTransform()->Set(fm::vec3(0, -1, 0), fm::vec3(-1.57079633, 0, 0), fm::vec3(0.25, 0.25, 0.25));
 	}
+
+	back_wall->SetModel(floor_model);
+	left_wall->SetModel(floor_model);
+	right_wall->SetModel(floor_model);
 
 	for (std::map<int, rlr::Batch*>::iterator it = render_system->static_instanced_batches.begin(); it != render_system->static_instanced_batches.end(); it++)
 	{
@@ -248,35 +227,11 @@ int main()
 
 	last_frame = std::chrono::high_resolution_clock::now();
 
-	editor.SetLanguageDefinition(lang);
-	std::ifstream t("resources/engine/shaders/compo_pixel.hlsl");
-	if (t.good())
-	{
-		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-		editor.SetText(str);
-	}
+	graph->InitAll();
 
-	bool first = true;
-
-	float w = 0.f;
 	while (!window->ShouldClose())
 	{
-		w += 0.1;
 		window->PollEvents();
-
-		if (first)
-		{
-			back_wall->SetModel(floor_model);
-			left_wall->SetModel(floor_model);
-			right_wall->SetModel(floor_model);
-
-			first = false;
-
-			render_system->UpdateGenericCB(back_wall, fm::vec3(0, 0, 3), fm::vec3(3.14159265, 0, 0), fm::vec3(0.25, 0.25, 0.25), true);
-			render_system->UpdateGenericCB(left_wall, fm::vec3(3, 0, 0), fm::vec3(0, -1.57079633, 0), fm::vec3(0.25, 0.25, 0.25), true);
-			render_system->UpdateGenericCB(right_wall, fm::vec3(-3, 0, 0), fm::vec3(0, 1.57079633, 0), fm::vec3(0.25, 0.25, 0.25), true);
-			render_system->UpdateGenericCB(dr0, fm::vec3(-1, -0.3, 0), fm::vec3(0, -45, 0), fm::vec3(1, 1, 1), true);
-		}
 
 		// Calculate Delta time
 		auto now = std::chrono::high_resolution_clock::now();
@@ -286,7 +241,9 @@ int main()
 
 		dr1->GetModel()->meshes[0].skeleton.Update(delta);
 
-		render_system->UpdateGenericCB(dr1, fm::vec3(1, -1, 0), fm::vec3(0, 180, 0), fm::vec3(0.015, 0.015, 0.015), false);
+		dr1->Update();
+
+		graph->Update();
 
 		render_system->Render(graph);
 	}

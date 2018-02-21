@@ -72,7 +72,7 @@ namespace fm {
 		}
 
 		Vec(T data[R]) {
-			this->data = data;
+			memcpy(this->data, data, sizeof(T) * R);
 		}
 
 		~Vec() {
@@ -132,9 +132,9 @@ namespace fm {
 				if (data[i] != other.data[i]) {
 					return false;
 				}
-
-				return true;
 			}
+			
+			return true;
 		}
 
 		bool operator!=(const Vec& other) const {
@@ -142,9 +142,9 @@ namespace fm {
 				if (data[i] != other.data[i]) {
 					return true;
 				}
-
-				return false;
 			}
+
+			return false;
 		}
 
 		T SqrtLength() {
