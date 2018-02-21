@@ -49,12 +49,12 @@ source_group("API Impl"     FILES ${API_HEADERS} ${API_SOURCES})
 source_group("ImGui"        FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS} ${IMGUI_INL})
 
 if (USE_D3D12)
-	target_link_libraries(RLRenderer RLCommon dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
+	target_link_libraries(RLRenderer dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
 elseif (USE_VULKAN)
-	target_link_libraries(RLRenderer RLCommon vulkan-1 dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
+	target_link_libraries(RLRenderer vulkan-1 dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
 endif()
 
-add_dependencies(RLRenderer glfw assimp)
+add_dependencies(RLRenderer RLCommon glfw assimp)
 
 ##### ENGINE MODULE #####
 project(RLEngine)
