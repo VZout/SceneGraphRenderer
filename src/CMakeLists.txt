@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 3.9.0)
 ##### INCLUDE DIRECTORIES #####
 include_directories(../src)
 
+##### COMMON MODULE #####
+project(RLCommon)
+
+file(GLOB_RECURSE SOURCES "common/*.cpp")
+file(GLOB_RECURSE HEADERS "common/*.h")
+
+add_library(RLCommon ${SOURCES} ${HEADERS})
+
+set_target_properties(RLCommon PROPERTIES LINKER_LANGUAGE CXX)
+
 ##### RENDERER MODULE #####
 project(RLRenderer)
 
@@ -39,18 +49,18 @@ source_group("API Impl"     FILES ${API_HEADERS} ${API_SOURCES})
 source_group("ImGui"        FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS} ${IMGUI_INL})
 
 if (USE_D3D12)
-	target_link_libraries(RLRenderer dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
+	target_link_libraries(RLRenderer RLCommon dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
 elseif (USE_VULKAN)
-	target_link_libraries(RLRenderer vulkan-1 dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
+	target_link_libraries(RLRenderer RLCommon vulkan-1 dxguid.lib d3d12.lib dxgi.lib d3dcompiler.lib glfw assimp)
 endif()
 
 add_dependencies(RLRenderer glfw assimp)
 
-##### UTILITY MODULE #####
-project(RLUtility)
+##### ENGINE MODULE #####
+project(RLEngine)
 
-file(GLOB_RECURSE SOURCES "util/*.cpp")
-file(GLOB_RECURSE HEADERS "util/*.h")
+file(GLOB_RECURSE SOURCES "engine/*.cpp")
+file(GLOB_RECURSE HEADERS "engine/*.h")
 
-add_library(RLUtility ${SOURCES} ${HEADERS})
-target_link_libraries(RLUtility RLRenderer d3d12.lib dxgi.lib d3dcompiler.lib)
+add_library(RLEngine ${SOURCES} ${HEADERS})
+target_link_libraries(RLEngine RLCommon)

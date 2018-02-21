@@ -11,8 +11,8 @@ function(buildTest EXAMPLE_NAME)
 
 	add_executable(${EXAMPLE_NAME} ${SOURCES} ${HEADERS})
 	target_include_directories(${EXAMPLE_NAME} PUBLIC ../src)
-	add_dependencies(${EXAMPLE_NAME} RLRenderer)
-	target_link_libraries(${EXAMPLE_NAME} RLRenderer glfw3)
+	add_dependencies(${EXAMPLE_NAME} RLCommon RLRenderer RLEngine)
+	target_link_libraries(${EXAMPLE_NAME} RLCommon RLRenderer RLEngine glfw3)
 	set_target_properties(${EXAMPLE_NAME} PROPERTIES FOLDER "Tests")
 	set_target_properties(${EXAMPLE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/../")
 endfunction(buildTest)
@@ -25,7 +25,7 @@ endfunction(buildTests)
 
 # Modify this list to add your own tests.
 set(EXAMPLES
-	BasicRenderingTest
+	BasicRenderingTest ECSTest
 )
 
 buildTests()
