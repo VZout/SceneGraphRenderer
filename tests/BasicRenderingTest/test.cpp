@@ -29,7 +29,7 @@ auto lang = TextEditor::LanguageDefinition::HLSL();
 static int num_floors = 10;
 
 bool first = true;
-static bool opened = true;
+static bool opened = true;	
 bool show_engine = true;
 
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame;

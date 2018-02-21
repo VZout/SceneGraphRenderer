@@ -17,7 +17,7 @@
 
 #include "math\vec.hpp"
 
-#include "util\thread_pool.h"
+#include "common\thread_pool.h"
 
 namespace rlr {
 
