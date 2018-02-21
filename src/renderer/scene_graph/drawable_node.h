@@ -1,15 +1,14 @@
 #pragma once
 
-#include "scene_graph.h"
+#include "scene_node.h"
 
-#include "../transform.h"
 #include "renderer\math\vec.hpp"
 #include "renderer\dx12\dx12_texture.h"
 
 namespace rlr
 {
 
-class DrawableNode : public Node
+class DrawableNode : public SceneNode
 {
 public:
 	DrawableNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, std::string const& pipeline_id, bool movable = false, bool cast_shadows = true, bool instanced = false, int instanced_batch_id = 0);
@@ -33,9 +32,6 @@ public:
 	void ShouldRequireUpdate(bool val);
 	bool RequiresUpdate() const;
 
-	Transform* GetTransform() const;
-	bool IsMovable() const;
-
 	void SetModel(Model* model);
 	Model* GetModel() const;
 
@@ -49,7 +45,6 @@ private:
 	bool cast_shadows;
 	bool requires_cb_update;
 	bool instanced;
-	bool movable;
 
 	unsigned int instanced_batch_id = 0;
 	fm::vec3 instanced_pos;
@@ -57,7 +52,6 @@ private:
 	std::string material_id;
 	std::string pipeline_id;
 	Model* model;
-	Transform* transform;
 	TextureArray* ta;
 	ConstantBuffer* const_buffer;
 };

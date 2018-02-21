@@ -22,7 +22,7 @@ rlr::Texture* wall_texture_specular = nullptr;
 rlr::Texture* wall_texture_normal = nullptr;
 rlr::Model* floor_model = nullptr;
 
-static int num_floors = 10;
+static int num_floors = 1;
 
 bool first = true;
 bool show_engine = true;
@@ -240,8 +240,6 @@ int main()
 		float delta = diff.count();
 
 		dr1->GetModel()->meshes[0].skeleton.Update(delta);
-
-		dr1->Update();
 
 		graph->Update();
 

@@ -304,37 +304,74 @@ namespace rlr {
 		ImGui::EndDock();
 	}
 
-	void imGui_SceneGraphNode(std::shared_ptr<Node> node) {
+	void imGui_SceneGraphNode(std::shared_ptr<Node> node)
+	{
 		ImGui::NextColumn();
 
-		auto n = std::dynamic_pointer_cast<DrawableNode>(node);
-		if (n && n->IsMovable()) {
-			if (ImGui::CollapsingHeader("Transform")) {
-				Transform* trans = n->GetTransform();
+		if (auto n = std::dynamic_pointer_cast<DrawableNode>(node))
+		{
+			if (n->IsMovable())
+			{
+				if (ImGui::CollapsingHeader(std::string("Transform (" + n->GetName() + ")").c_str()))
+				{
+					Transform* trans = n->GetTransform();
 
-				float* pos = trans->GetPosition().data;
-				float* rot = trans->GetRotation().data;
-				float* sc = trans->GetScale().data;
+					float* pos = trans->GetPosition().data;
+					float* rot = trans->GetRotation().data;
+					float* sc = trans->GetScale().data;
 
-				std::string name = " (" + node->GetName() + ")";
-				ImGui::DragFloat3(("Position" + name).c_str(), pos, 0.1f);
-				ImGui::DragFloat3(("Rotation" + name).c_str(), rot, 0.1f);
-				ImGui::DragFloat3(("Scale" + name).c_str(), sc, 0.1f);
+					std::string name = " (" + node->GetName() + ")";
+					ImGui::DragFloat3(("Position" + name).c_str(), pos, 0.1f);
+					ImGui::DragFloat3(("Rotation" + name).c_str(), rot, 0.1f);
+					ImGui::DragFloat3(("Scale" + name).c_str(), sc, 0.1f);
 
-				trans->SetPosition(pos);
-				trans->SetRotation(rot);
-				trans->SetScale(sc);
+					trans->SetPosition(pos);
+					trans->SetRotation(rot);
+					trans->SetScale(sc);
+				}
+				else
+				{
+					std::string str = "Sationary";
+					if (n->IsInstanced()) str += ", Instanced";
+					str += " drawable node";
+
+					ImGui::TextDisabled(str.c_str());
+				}
 			}
 		}
-		else if (n && !n->IsMovable())
+		else if (auto sn = std::dynamic_pointer_cast<SceneNode>(node))
 		{
-			std::string str = "Sationary";
-			if (n->IsInstanced()) str += ", Instanced";
-			str += " object";
+			if (sn->IsMovable())
+			{
+				if (ImGui::CollapsingHeader(std::string("Transform (" + sn->GetName() + ")").c_str()))
+				{
+					Transform* trans = sn->GetTransform();
 
-			ImGui::TextDisabled(str.c_str());
+					float* pos = trans->GetPosition().data;
+					float* rot = trans->GetRotation().data;
+					float* sc = trans->GetScale().data;
+
+					std::string name = " (" + node->GetName() + ")";
+					ImGui::DragFloat3(("Position" + name).c_str(), pos, 0.1f);
+					ImGui::DragFloat3(("Rotation" + name).c_str(), rot, 0.1f);
+					ImGui::DragFloat3(("Scale" + name).c_str(), sc, 0.1f);
+
+					trans->SetPosition(pos);
+					trans->SetRotation(rot);
+					trans->SetScale(sc);
+				}
+			}
+			else
+			{
+				std::string str = "Sationary";
+				if (n->IsInstanced()) str += ", Instanced";
+				str += " scene node";
+
+				ImGui::TextDisabled(str.c_str());
+			}
 		}
-		else if (auto root = std::dynamic_pointer_cast<RootNode>(node)) {
+		else if (auto root = std::dynamic_pointer_cast<RootNode>(node))
+		{
 			int w = root->GetViewport().viewport.Width;
 			int h = root->GetViewport().viewport.Height;;
 			ImGui::TextDisabled(("Viewport: " + std::to_string(w) + ", " + std::to_string(h)).c_str());

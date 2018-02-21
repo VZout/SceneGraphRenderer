@@ -6,15 +6,14 @@ namespace rlr
 {
 
 DrawableNode::DrawableNode(SceneGraph& graph, RenderSystem& render_system, std::string const& name, std::string const& pipeline_id, bool movable, bool cast_shadows, bool instanced, int instanced_batch_id)
-	: Node(graph, render_system, name),	pipeline_id(pipeline_id), movable(movable), cast_shadows(cast_shadows),
-	instanced(instanced), instanced_batch_id(instanced_batch_id), requires_cb_update(true), transform(new Transform())
+	: SceneNode(graph, render_system, name, movable),
+	pipeline_id(pipeline_id), cast_shadows(cast_shadows), instanced(instanced), instanced_batch_id(instanced_batch_id), requires_cb_update(true)
 {
 }
 
 DrawableNode::~DrawableNode()
 {
 	delete ta;
-	delete transform;
 }
 
 void DrawableNode::SetTextures(std::vector<Texture*> textures)
@@ -24,6 +23,8 @@ void DrawableNode::SetTextures(std::vector<Texture*> textures)
 
 void DrawableNode::Init()
 {
+	SceneNode::Init();
+
 	Create(&const_buffer, render_system.device, sizeof(CBStruct));
 
 	if (instanced)
@@ -48,16 +49,11 @@ void DrawableNode::Init()
 
 	if (!movable)
 	{
-		if (transform->RequiresUpdate())
-		{
-			transform->Update();
-		}
-
 		if (!requires_cb_update) return;
 
 		CBStruct cb_data;
 
-		DirectX::XMStoreFloat4x4(&cb_data.model, transform->GetModel());
+		DirectX::XMStoreFloat4x4(&cb_data.model, transform->GetWorldModel());
 
 		cb_data.instanced = IsInstanced();
 
@@ -70,18 +66,13 @@ void DrawableNode::Init()
 
 void DrawableNode::Update()
 {
-	if (!movable) return;
+	SceneNode::Update();
 
-	if (transform->RequiresUpdate())
-	{
-		transform->Update();
-	}
-
-	if (!requires_cb_update) return; // TODO: actually make requires cb update usefull.
+	if (!movable || !requires_cb_update) return;
 
 	CBStruct cb_data;
 
-	DirectX::XMStoreFloat4x4(&cb_data.model, transform->GetModel());
+	DirectX::XMStoreFloat4x4(&cb_data.model, transform->GetWorldModel());
 
 	cb_data.instanced = IsInstanced();
 
@@ -167,16 +158,6 @@ void DrawableNode::ShouldRequireUpdate(bool val)
 bool DrawableNode::RequiresUpdate() const
 {
 	return requires_cb_update;
-}
-
-Transform* DrawableNode::GetTransform() const
-{
-	return transform;
-}
-
-bool DrawableNode::IsMovable() const
-{
-	return movable;
 }
 
 void DrawableNode::SetModel(Model* model)
